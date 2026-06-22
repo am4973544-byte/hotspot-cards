@@ -1,0 +1,3525 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تكة Hotspot - مولد الكروت</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- ============================================================
+    استيراد مكتبة mikroapi باستخدام importmap
+    ============================================================ -->
+    <script type="importmap">
+        {
+            "imports": {
+                "mikroapi": "https://cdn.jsdelivr.net/npm/mikroapi@2.0.2/+esm"
+            }
+        }
+    </script>
+
+    <style>
+        /* ============================================================
+           التصميم الكلاسيكي المطور - ألوان محسّنة
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tahoma', 'Segoe UI', sans-serif;
+            background: #e8e4e0;
+            padding: 20px;
+            direction: rtl;
+            min-height: 100vh;
+        }
+
+        .window {
+            background: #f5f2ef;
+            border: 2px solid #7a7a7a;
+            border-radius: 4px;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 12px 15px;
+            box-shadow: 4px 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .header {
+            font-weight: bold;
+            font-size: 16px;
+            padding: 8px 12px;
+            margin-bottom: 14px;
+            border-bottom: 2px solid #5c6bc0;
+            background: linear-gradient(135deg, #3949ab 0%, #5c6bc0 50%, #7986cb 100%);
+            color: white;
+            border-radius: 3px 3px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title .icon {
+            font-size: 22px;
+        }
+
+        .header-badge {
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-weight: normal;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .header-actions button {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 3px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: 'Tahoma', sans-serif;
+            color: white;
+            border-radius: 3px;
+            transition: background 0.2s;
+        }
+
+        .header-actions button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .main-layout {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .left-panel {
+            flex: 2;
+            min-width: 300px;
+        }
+
+        .right-panel {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .box {
+            border: 2px solid #7a7a7a;
+            background: #ffffff;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .box-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 8px;
+            border-bottom: 2px solid #5c6bc0;
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #1a1a2e;
+        }
+
+        .box-title .badge {
+            font-size: 11px;
+            background: #e8eaf6;
+            padding: 0 10px;
+            border: 1px solid #5c6bc0;
+            border-radius: 10px;
+            font-weight: normal;
+            color: #3949ab;
+        }
+
+        .type-toggle {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            background: #e8eaf6;
+            padding: 4px;
+            border-radius: 3px;
+            border: 2px solid #7a7a7a;
+        }
+
+        .type-toggle .btn-type {
+            flex: 1;
+            padding: 6px 12px;
+            border: 2px solid transparent;
+            background: transparent;
+            cursor: pointer;
+            font-family: 'Tahoma', sans-serif;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 3px;
+            transition: all 0.2s;
+            color: #1a1a2e;
+        }
+
+        .type-toggle .btn-type.active {
+            background: #3949ab;
+            color: white;
+            border-color: #283593;
+        }
+
+        .type-toggle .btn-type:hover:not(.active) {
+            background: #c5cae9;
+        }
+
+        .type-toggle .btn-type .icon {
+            margin-left: 4px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 5px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .form-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: bold;
+            min-width: 70px;
+            color: #1a1a2e;
+        }
+
+        .form-group label.small {
+            min-width: 40px;
+            font-size: 12px;
+        }
+
+        .form-group input,
+        .form-group select {
+            border: 2px solid #7a7a7a;
+            padding: 4px 8px;
+            font-family: 'Tahoma', sans-serif;
+            font-size: 13px;
+            background: #fafafa;
+            border-radius: 3px;
+            height: 30px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #3949ab;
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 2px rgba(57, 73, 171, 0.1);
+        }
+
+        .form-group input[type="number"] {
+            width: 60px;
+        }
+
+        .form-group input[type="text"] {
+            width: 100px;
+        }
+
+        .form-group input[type="color"] {
+            width: 32px;
+            height: 30px;
+            padding: 2px;
+            border: 2px solid #7a7a7a;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .form-group input[type="file"] {
+            padding: 3px 6px;
+            font-size: 12px;
+            border: 1px solid #7a7a7a;
+            background: #fafafa;
+            border-radius: 3px;
+        }
+
+        .btn {
+            padding: 5px 18px;
+            border: 2px solid #7a7a7a;
+            background: #e8eaf6;
+            font-family: 'Tahoma', sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 3px;
+            color: #1a1a2e;
+            transition: all 0.15s ease;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: #d5d8e8;
+            border-color: #5c6bc0;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+            background: #c5c8e0;
+        }
+
+        .btn-primary {
+            background: #3949ab;
+            border-color: #283593;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #283593;
+            border-color: #1a237e;
+            color: white;
+        }
+
+        .btn-success {
+            background: #2e7d32;
+            border-color: #1b5e20;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #1b5e20;
+            border-color: #0d3b0e;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #c62828;
+            border-color: #b71c1c;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #b71c1c;
+            border-color: #880e0e;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f57f17;
+            border-color: #e65100;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #e65100;
+            border-color: #bf360c;
+            color: white;
+        }
+
+        .btn-info {
+            background: #0d47a1;
+            border-color: #0d47a1;
+            color: white;
+        }
+        .btn-info:hover {
+            background: #0a2e6b;
+            border-color: #07204a;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #78909c;
+            border-color: #546e7a;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #546e7a;
+            border-color: #37474f;
+            color: white;
+        }
+
+        .btn-mikrotik {
+            background: #e65100;
+            border-color: #bf360c;
+            color: white;
+        }
+        .btn-mikrotik:hover {
+            background: #bf360c;
+            border-color: #8d2e00;
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 3px 12px;
+            font-size: 12px;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+            min-width: 55px;
+            text-align: center;
+        }
+
+        .preview-area {
+            border: 3px solid #3949ab;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            font-weight: bold;
+            margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.03);
+        }
+
+        .preview-area .placeholder {
+            color: #999;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .preview-area .placeholder .icon {
+            font-size: 40px;
+            display: block;
+            color: #5c6bc0;
+            opacity: 0.4;
+        }
+
+        .preview-card-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .preview-card-container .card-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .preview-card-container .watermark {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            font-weight: 900;
+            color: rgba(0, 0, 0, 0.06);
+            pointer-events: none;
+            transform: rotate(-25deg);
+            letter-spacing: 4px;
+        }
+
+        .drag-element {
+            position: absolute;
+            touch-action: none;
+            user-select: none;
+            padding: 2px 6px;
+            font-weight: 700;
+            z-index: 10;
+            cursor: grab;
+            border: 2px solid transparent;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+
+        .drag-element:active {
+            cursor: grabbing;
+        }
+
+        .drag-element.dragging {
+            border-color: #3949ab;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .element-controls {
+            border: 2px solid #7a7a7a;
+            padding: 8px 10px;
+            background: #f5f2ef;
+            margin-top: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            border-radius: 3px;
+        }
+
+        .element-controls label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+
+        .element-controls input[type="range"] {
+            width: 80px;
+            height: 4px;
+            border: none;
+            background: #c5cae9;
+            -webkit-appearance: none;
+            border-radius: 2px;
+        }
+
+        .element-controls input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #3949ab;
+            border: 2px solid #283593;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .element-controls input[type="number"] {
+            width: 40px;
+            border: 2px solid #7a7a7a;
+            padding: 2px 4px;
+            font-size: 12px;
+            text-align: center;
+            border-radius: 3px;
+        }
+
+        .element-controls select {
+            border: 2px solid #7a7a7a;
+            padding: 2px 6px;
+            font-size: 12px;
+            border-radius: 3px;
+            background: white;
+        }
+
+        .quick-settings {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+            padding: 6px 10px;
+            border: 2px solid #7a7a7a;
+            background: #f5f2ef;
+            border-radius: 3px;
+        }
+
+        .quick-settings label {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            color: #1a1a2e;
+            padding: 2px 6px;
+            border-radius: 3px;
+            transition: background 0.15s;
+        }
+
+        .quick-settings label:hover {
+            background: #e8eaf6;
+        }
+
+        .quick-settings input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #3949ab;
+            cursor: pointer;
+        }
+
+        .gallery-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .gallery-item {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #7a7a7a;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            border-color: #3949ab;
+        }
+
+        .gallery-item.active {
+            border-color: #3949ab;
+            border-width: 3px;
+            box-shadow: 0 0 0 2px rgba(57, 73, 171, 0.2);
+        }
+
+        .numbers-table-wrap {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 2px solid #7a7a7a;
+            margin-top: 6px;
+            border-radius: 3px;
+        }
+
+        .numbers-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .numbers-table th {
+            background: linear-gradient(135deg, #3949ab, #5c6bc0);
+            color: white;
+            border: 1px solid #7a7a7a;
+            padding: 4px 8px;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .numbers-table td {
+            border: 1px solid #7a7a7a;
+            padding: 3px 8px;
+            text-align: center;
+        }
+
+        .numbers-table tr:nth-child(even) {
+            background: #f5f2ef;
+        }
+
+        .numbers-table tr.expired {
+            background: #ffebee !important;
+        }
+
+        .status-badge {
+            font-size: 10px;
+            padding: 1px 10px;
+            border: 1px solid #7a7a7a;
+            font-weight: bold;
+            border-radius: 10px;
+        }
+
+        .status-badge.active {
+            background: #c8e6c9;
+            border-color: #2e7d32;
+            color: #1b5e20;
+        }
+
+        .status-badge.expired {
+            background: #ffcdd2;
+            border-color: #c62828;
+            color: #b71c1c;
+        }
+
+        .status-badge.expiring-soon {
+            background: #fff9c4;
+            border-color: #f57f17;
+            color: #e65100;
+        }
+
+        #output {
+            width: 100%;
+            min-height: 80px;
+            padding: 6px 10px;
+            border: 2px solid #7a7a7a;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 11px;
+            background: #0d0d1a;
+            color: #00e676;
+            direction: ltr;
+            text-align: left;
+            resize: vertical;
+            line-height: 1.5;
+            border-radius: 3px;
+        }
+
+        .search-box {
+            display: none;
+            gap: 4px;
+            margin-top: 4px;
+            align-items: center;
+        }
+
+        .search-box input {
+            flex: 1;
+            border: 2px solid #7a7a7a;
+            padding: 3px 8px;
+            font-family: 'Tahoma', sans-serif;
+            border-radius: 3px;
+        }
+
+        .search-box input:focus {
+            border-color: #3949ab;
+            outline: none;
+        }
+
+        .progress-container {
+            border: 2px solid #7a7a7a;
+            padding: 4px 10px;
+            background: #f5f2ef;
+            margin-bottom: 8px;
+            border-radius: 3px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e8eaf6;
+            border: 1px solid #7a7a7a;
+            margin-top: 2px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3949ab, #5c6bc0);
+            width: 0%;
+            transition: width 0.4s ease;
+            border-radius: 4px;
+        }
+
+        .connection-status {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px;
+            border: 2px solid #7a7a7a;
+            background: #f5f2ef;
+            margin-top: 4px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+
+        .connection-status .status-dot {
+            width: 12px;
+            height: 12px;
+            border: 1px solid #7a7a7a;
+            display: inline-block;
+            border-radius: 50%;
+        }
+
+        .status-dot.connected {
+            background: #2e7d32;
+        }
+
+        .status-dot.disconnected {
+            background: #c62828;
+        }
+
+        .status-dot.https {
+            background: #0d47a1;
+        }
+
+        .status-dot.sending {
+            background: #f57f17;
+            animation: pulse 0.8s infinite;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+
+        .api-log {
+            max-height: 120px;
+            overflow-y: auto;
+            background: #0d0d1a;
+            padding: 4px 10px;
+            font-family: 'Consolas', monospace;
+            font-size: 10px;
+            color: #ccc;
+            border: 2px solid #7a7a7a;
+            margin-top: 4px;
+            direction: ltr;
+            text-align: left;
+            line-height: 1.5;
+            border-radius: 3px;
+        }
+
+        .api-log .log-entry.success {
+            color: #00e676;
+        }
+        .api-log .log-entry.error {
+            color: #ff6b6b;
+        }
+        .api-log .log-entry.info {
+            color: #64b5f6;
+        }
+        .api-log .log-entry.warning {
+            color: #ffd54f;
+        }
+        .api-log .log-entry.https {
+            color: #4dd0e1;
+        }
+
+        .shortcuts-hint {
+            font-size: 11px;
+            color: #1a1a2e;
+            text-align: center;
+            padding: 4px 8px;
+            border: 2px solid #7a7a7a;
+            background: #f5f2ef;
+            margin-top: 6px;
+            border-radius: 3px;
+        }
+
+        .shortcuts-hint kbd {
+            background: #e8eaf6;
+            padding: 1px 8px;
+            border: 1px solid #7a7a7a;
+            font-family: 'Tahoma', sans-serif;
+            font-size: 11px;
+            border-radius: 3px;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+
+        .dialog-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .dialog-content {
+            background: #f5f2ef;
+            border: 3px solid #3949ab;
+            padding: 16px 20px;
+            max-width: 550px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        .dialog-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #5c6bc0;
+            padding-bottom: 6px;
+            text-align: center;
+            color: #1a1a2e;
+        }
+
+        .dialog-footer {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .dialog-footer .btn {
+            flex: 1;
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            left: 16px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-width: 500px;
+            margin: 0 auto;
+            pointer-events: none;
+        }
+
+        .toast {
+            padding: 8px 16px;
+            border: 2px solid #7a7a7a;
+            background: #e8eaf6;
+            font-weight: bold;
+            font-size: 13px;
+            pointer-events: auto;
+            animation: slideUp 0.3s ease;
+            border-radius: 3px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .toast.success {
+            background: #c8e6c9;
+            border-color: #2e7d32;
+            color: #1b5e20;
+        }
+        .toast.error {
+            background: #ffcdd2;
+            border-color: #c62828;
+            color: #b71c1c;
+        }
+        .toast.warning {
+            background: #fff9c4;
+            border-color: #f57f17;
+            color: #e65100;
+        }
+        .toast.info {
+            background: #bbdefb;
+            border-color: #0d47a1;
+            color: #0a2e6b;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(40px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(40px);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+            .window {
+                padding: 8px;
+            }
+            .main-layout {
+                flex-direction: column;
+            }
+            .form-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .form-group {
+                flex-wrap: wrap;
+            }
+            .form-group input[type="text"] {
+                width: 100%;
+            }
+            .form-group input[type="number"] {
+                width: 80px;
+            }
+            .btn-group .btn {
+                min-width: 40px;
+                font-size: 11px;
+                padding: 3px 8px;
+            }
+            .header {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .header-actions {
+                flex-wrap: wrap;
+            }
+            .right-panel {
+                flex: 1;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .window {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .btn {
+                display: none !important;
+            }
+            .preview-area {
+                border: 1px solid #000;
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="window">
+
+        <div class="header">
+            <div class="header-title">
+                <span class="icon">📡</span>
+                <span>تكة Hotspot - مولد الكروت</span>
+                <span class="header-badge">Pro v4.0</span>
+            </div>
+            <div class="header-actions">
+                <button onclick="toggleTheme()">🌙</button>
+                <button onclick="toggleLanguage()">🌐</button>
+                <button onclick="showLoadDialog()">📂</button>
+                <button onclick="saveCurrentConfig()">💾</button>
+            </div>
+        </div>
+
+        <div class="main-layout">
+
+            <div class="left-panel">
+
+                <div class="progress-container">
+                    <div class="progress-header">
+                        <span>التقدم</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+
+                <div class="box">
+                    <div class="box-title">
+                        <span>📦 الباقة</span>
+                        <span class="badge" id="packageBadge">جاهزة</span>
+                    </div>
+
+                    <div class="type-toggle">
+                        <button class="btn-type active" id="btnHotspot" onclick="switchType('hotspot')">
+                            <span class="icon">📶</span> Hotspot
+                        </button>
+                        <button class="btn-type" id="btnUserManager" onclick="switchType('userman')">
+                            <span class="icon">👤</span> User Manager
+                        </button>
+                    </div>
+
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
+                        <button class="btn btn-sm btn-secondary" onclick="loadPackage(1,'Mbps',1,'GB',1,'أساسي')">1M/1G</button>
+                        <button class="btn btn-sm btn-secondary" onclick="loadPackage(4,'Mbps',5,'GB',7,'أسبوعي')">4M/5G</button>
+                        <button class="btn btn-sm btn-secondary" onclick="loadPackage(10,'Mbps',15,'GB',15,'نصف شهري')">10M/15G</button>
+                        <button class="btn btn-sm btn-secondary" onclick="loadPackage(25,'Mbps',50,'GB',30,'شهري')">25M/50G</button>
+                        <button class="btn btn-sm btn-secondary" onclick="loadPackage(50,'Mbps',200,'GB',30,'بريميوم')">50M/200G</button>
+                        <button class="btn btn-sm btn-secondary" onclick="loadPackage(1,'Gbps',1,'TB',30,'ألترا')">1G/1TB</button>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>اسم الباقة</label>
+                            <input type="text" id="packageName" value="باقة الضيافة" style="width:120px;">
+                        </div>
+                        <div class="form-group">
+                            <label>السرعة</label>
+                            <input type="number" id="speedValue" value="10" style="width:50px;">
+                            <select id="speedUnit" style="width:55px;">
+                                <option value="Mbps">ميجا</option>
+                                <option value="Gbps">جيجا</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>حجم البيانات</label>
+                            <input type="number" id="dataValue" value="5" style="width:50px;">
+                            <select id="dataUnit" style="width:55px;">
+                                <option value="MB">ميجا</option>
+                                <option value="GB" selected>جيجا</option>
+                                <option value="TB">تيرا</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>المدة (أيام)</label>
+                            <input type="number" id="validityDays" value="30" style="width:50px;">
+                        </div>
+                        <div class="form-group">
+                            <label>صلاحية (ساعات)</label>
+                            <input type="number" id="expiryHours" value="24" style="width:50px;">
+                        </div>
+                        <div class="form-group">
+                            <label>السعر</label>
+                            <input type="number" id="price" value="0" style="width:50px;">
+                        </div>
+                    </div>
+                    <div style="margin-top:4px;font-size:12px;color:#666;background:#f5f2ef;padding:4px 8px;border-radius:3px;border:1px solid #ddd;">
+                        النوع الحالي: <strong id="currentTypeDisplay">🟢 Hotspot</strong>
+                    </div>
+                </div>
+
+                <div class="box">
+                    <div class="box-title">
+                        <span>🔢 الأرقام</span>
+                        <span class="badge" id="numBadge">0</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>بداية</label>
+                            <input type="number" id="beginNumber" value="1" style="width:60px;">
+                        </div>
+                        <div class="form-group">
+                            <label>طول الرقم</label>
+                            <input type="number" id="numLength" value="8" style="width:50px;">
+                        </div>
+                        <div class="form-group">
+                            <label>العدد</label>
+                            <input type="number" id="numCount" value="20" style="width:60px;">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>كلمة المرور</label>
+                            <select id="passwordType" style="width:100px;">
+                                <option value="same">نفس الرقم</option>
+                                <option value="empty">فارغ</option>
+                                <option value="custom">مخصص</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="customPasswordGroup" style="display:none;">
+                            <label>كلمة المرور</label>
+                            <input type="text" id="customPassword" style="width:80px;">
+                        </div>
+                        <div class="form-group">
+                            <label>البروفايل</label>
+                            <input type="text" id="profile" value="default" style="width:80px;">
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="generateNumbers()">▶ توليد</button>
+                        <button class="btn btn-secondary" onclick="clearAll()">↺ مسح</button>
+                        <button class="btn btn-info" onclick="toggleSearch()">🔍 بحث</button>
+                        <button class="btn btn-success" onclick="showNumbersTable()">📋 عرض</button>
+                        <button class="btn btn-danger" onclick="showExpiredDialog()">⏳ منتهية</button>
+                    </div>
+
+                    <div class="search-box" id="searchBox">
+                        <input type="text" id="searchInput" placeholder="ابحث عن رقم..." oninput="quickSearch()">
+                        <button class="btn btn-sm btn-danger" onclick="document.getElementById('searchBox').style.display='none'">✕</button>
+                    </div>
+
+                    <div id="numbersTableCard" style="display:none;margin-top:6px;">
+                        <div class="box-title" style="font-size:13px;">
+                            <span>قائمة الكروت</span>
+                            <span class="badge" id="tableCount">0</span>
+                        </div>
+                        <div class="numbers-table-wrap">
+                            <table class="numbers-table" id="numbersTable">
+                                <thead>
+                                    <tr><th>#</th><th>الرقم</th><th>كلمة المرور</th><th>الحالة</th></tr>
+                                </thead>
+                                <tbody id="numbersTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="btn-group" style="margin-top:4px;">
+                            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('numbersTableCard').style.display='none'">✕ إغلاق</button>
+                            <button class="btn btn-sm btn-success" onclick="exportTableToCSV()">CSV</button>
+                            <button class="btn btn-sm btn-info" onclick="exportToJSON()">JSON</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="box">
+                    <div class="box-title">
+                        <span>📜 السكريبت</span>
+                        <span class="badge" id="scriptLines">0 سطر</span>
+                    </div>
+                    <textarea id="output" readonly placeholder="سيكون السكريبت هنا..."></textarea>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-secondary" onclick="saveAsTxt()">📄 نصي</button>
+                        <button class="btn btn-sm btn-primary" onclick="saveAsMikroTik()">🖥 ميكروتك</button>
+                        <button class="btn btn-sm btn-info" onclick="generatePDF()">📄 PDF</button>
+                        <button class="btn btn-sm btn-success" onclick="saveAsExcel()">📊 Excel</button>
+                        <button class="btn btn-sm btn-warning" onclick="exportToJSON()">📋 JSON</button>
+                        <button class="btn btn-sm btn-secondary" onclick="copyScript()">📋 نسخ</button>
+                        <button class="btn btn-sm btn-danger" onclick="printCards()">🖨 طباعة</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+
+                <div class="box">
+                    <div class="box-title">
+                        <span>👁 معاينة الكرت</span>
+                        <span class="badge" id="previewCount">0 كروت</span>
+                    </div>
+
+                    <div class="preview-area" id="previewWrapper">
+                        <div class="placeholder" id="previewPlaceholder">
+                            <span class="icon">🖨</span>
+                            معاينة الكرت<br>
+                            <span style="font-size:12px;color:#999;">اسحب العناصر لضبط الموقع</span>
+                        </div>
+                        <div class="preview-card-container" id="previewCard" style="display:none;">
+                            <div class="card-bg" id="cardBackground"></div>
+                            <div class="watermark" id="watermarkElement"></div>
+                        </div>
+                    </div>
+
+                    <div class="element-controls">
+                        <label>العنصر</label>
+                        <select id="dragElementSelect" onchange="selectElement()" style="width:100px;">
+                            <option value="username">المستخدم</option>
+                            <option value="password">كلمة المرور</option>
+                            <option value="package-name">اسم الباقة</option>
+                            <option value="package-details">تفاصيل الباقة</option>
+                            <option value="serial">تسلسلي</option>
+                            <option value="date">التاريخ</option>
+                            <option value="profile">البروفايل</option>
+                            <option value="extra-note">ملاحظة</option>
+                            <option value="qr">QR Code</option>
+                        </select>
+                        <label>X</label>
+                        <input type="number" id="dragXNum" value="73" min="0" max="260" onchange="updateDragFromNumber()" style="width:40px;">
+                        <label>Y</label>
+                        <input type="number" id="dragYNum" value="24" min="0" max="165" onchange="updateDragFromNumber()" style="width:40px;">
+                        <label>حجم</label>
+                        <input type="number" id="dragSizeNum" value="9" min="6" max="24" onchange="updateDragFromSize()" style="width:40px;">
+                    </div>
+
+                    <div class="quick-settings">
+                        <label><input type="checkbox" id="showPassword" checked onchange="updatePreview()"> كلمة المرور</label>
+                        <label><input type="checkbox" id="showPackageInfo" checked onchange="updatePreview()"> الباقة</label>
+                        <label><input type="checkbox" id="useSerialNumber" onchange="updatePreview()"> تسلسلي</label>
+                        <label><input type="checkbox" id="useDatePrinting" onchange="updatePreview()"> تاريخ</label>
+                        <label><input type="checkbox" id="useQRCode" onchange="updatePreview()"> QR</label>
+                        <label><input type="checkbox" id="useTimer" onchange="updatePreview()"> مؤقت</label>
+                    </div>
+
+                    <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
+                        <label style="font-size:12px;font-weight:bold;color:#1a1a2e;">علامة مائية:</label>
+                        <input type="text" id="watermarkText" placeholder="نص العلامة" style="border:2px solid #7a7a7a;padding:3px 8px;width:80px;border-radius:3px;" oninput="updatePreview()">
+                        <input type="color" id="watermarkColor" value="#000000" onchange="updatePreview()" style="width:32px;height:28px;border:2px solid #7a7a7a;padding:2px;border-radius:3px;cursor:pointer;">
+                        <input type="range" id="watermarkSize" min="20" max="60" value="30" oninput="updatePreview()" style="width:60px;">
+                        <label style="font-size:12px;font-weight:bold;color:#1a1a2e;">لون النص:</label>
+                        <input type="color" id="textColor" value="#1a1a2e" onchange="updatePreview()" style="width:32px;height:28px;border:2px solid #7a7a7a;padding:2px;border-radius:3px;cursor:pointer;">
+                        <input type="file" id="backgroundImage" accept="image/*" style="font-size:11px;border:1px solid #7a7a7a;padding:3px;width:130px;border-radius:3px;background:white;">
+                    </div>
+
+                    <div style="margin-top:4px;">
+                        <label style="font-size:12px;font-weight:bold;color:#1a1a2e;">خلفيات جاهزة:</label>
+                        <div class="gallery-grid">
+                            <div class="gallery-item" style="background:linear-gradient(135deg,#3949ab,#7986cb);" onclick="setGalleryBg(this)"></div>
+                            <div class="gallery-item" style="background:linear-gradient(135deg,#e8eaf6,#c5cae9);" onclick="setGalleryBg(this)"></div>
+                            <div class="gallery-item" style="background:linear-gradient(135deg,#2e7d32,#81c784);" onclick="setGalleryBg(this)"></div>
+                            <div class="gallery-item" style="background:linear-gradient(135deg,#c62828,#ef9a9a);" onclick="setGalleryBg(this)"></div>
+                            <div class="gallery-item" style="background:linear-gradient(135deg,#f57f17,#ffcc02);" onclick="setGalleryBg(this)"></div>
+                            <div class="gallery-item" style="background:linear-gradient(135deg,#0d47a1,#64b5f6);" onclick="setGalleryBg(this)"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:4px;">
+                        <label style="font-size:12px;font-weight:bold;color:#1a1a2e;">ملاحظة:</label>
+                        <input type="text" id="extraNote" placeholder="نص إضافي" style="border:2px solid #7a7a7a;padding:3px 8px;width:150px;border-radius:3px;" oninput="updatePreview()">
+                    </div>
+
+                    <div style="margin-top:6px;border-top:2px solid #5c6bc0;padding-top:6px;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>الأعمدة</label>
+                                <input type="number" id="columns" value="2" min="1" max="6" style="width:50px;">
+                            </div>
+                            <div class="form-group">
+                                <label>الصفوف</label>
+                                <input type="number" id="rows" value="8" min="1" max="30" style="width:50px;">
+                            </div>
+                            <div class="form-group">
+                                <label>حجم الورق</label>
+                                <select id="paperSize" style="width:70px;">
+                                    <option value="a4">A4</option>
+                                    <option value="a5">A5</option>
+                                    <option value="letter">Letter</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>بادئة</label>
+                                <input type="text" id="filePrefix" value="hotspot_cards" style="width:80px;">
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="saveFullReportPDF()">📄 تقرير PDF</button>
+                            <button class="btn btn-success" onclick="exportAllQRsToPDF()">📱 QR PDF</button>
+                            <button class="btn btn-info" onclick="showAdvancedStats()">📊 تحليل</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:6px;border-top:2px solid #5c6bc0;padding-top:6px;">
+                        <div class="btn-group">
+                            <button class="btn btn-mikrotik" onclick="showMikrotikDialog()" style="flex:1.5;">
+                                <i>📤</i> إرسال للميكروتك
+                            </button>
+                            <button class="btn btn-warning" onclick="testMikrotikConnection()" style="flex:1;">
+                                <i>🔌</i> اختبار
+                            </button>
+                            <button class="btn btn-secondary" onclick="copyScriptToClipboard()" style="flex:1;">
+                                <i>📋</i> نسخ السكريبت
+                            </button>
+                        </div>
+                        <div class="connection-status" id="connectionStatus">
+                            <span class="status-dot disconnected" id="statusDot"></span>
+                            <span id="statusText">غير متصل</span>
+                            <span style="margin-right:auto;font-size:11px;color:#666;" id="connectionDetails"></span>
+                        </div>
+                        <div id="sendLog" class="api-log" style="display:none;margin-top:4px;">
+                            <div class="log-entry info">🔄 جاهز للإرسال...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="shortcuts-hint">
+                    <kbd>Ctrl+Enter</kbd> توليد &bull;
+                    <kbd>Ctrl+S</kbd> حفظ &bull;
+                    <kbd>Ctrl+F</kbd> بحث &bull;
+                    <kbd>Ctrl+P</kbd> طباعة
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    DIALOGS
+    ============================================================ -->
+
+    <div class="dialog-overlay" id="configDialog" onclick="if(event.target===this)closeDialog()">
+        <div class="dialog-content">
+            <div class="dialog-title">📂 تحميل القالب</div>
+            <select id="configSelect" style="width:100%;padding:4px 8px;border:2px solid #7a7a7a;font-family:'Tahoma',sans-serif;border-radius:3px;"></select>
+            <div class="dialog-footer">
+                <button class="btn btn-danger" onclick="closeDialog()">✕ إلغاء</button>
+                <button class="btn btn-primary" onclick="handleDialogConfirm()">✓ تأكيد</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mikrotik Dialog -->
+    <div class="dialog-overlay" id="mikrotikDialog" onclick="if(event.target===this)closeMikrotikDialog()">
+        <div class="dialog-content">
+            <div class="dialog-title">🖥 إعدادات الميكروتك</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <div class="form-group">
+                    <label style="min-width:80px;">عنوان IP</label>
+                    <input type="text" id="mikrotikIP" value="10.0.0.1" style="flex:1;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;">
+                </div>
+                <div class="form-group">
+                    <label style="min-width:80px;">المستخدم</label>
+                    <input type="text" id="mikrotikUser" value="admin" style="flex:1;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;">
+                </div>
+                <div class="form-group">
+                    <label style="min-width:80px;">كلمة المرور</label>
+                    <input type="password" id="mikrotikPassword" placeholder="كلمة مرور الميكروتك" style="flex:1;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;">
+                </div>
+                <div class="form-group">
+                    <label style="min-width:80px;">البروفايل</label>
+                    <input type="text" id="mikrotikProfile" placeholder="أدخل البروفايل" style="flex:1;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;">
+                </div>
+                <div class="form-group">
+                    <label style="min-width:80px;">طريقة الإرسال</label>
+                    <select id="mikrotikMethod" style="flex:1;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;">
+                        <option value="rest">REST API (HTTP/HTTPS)</option>
+                        <option value="native">Native API (TCP) - مكتبة mikroapi</option>
+                    </select>
+                </div>
+                <div class="form-group" id="nativePortGroup" style="display:none;">
+                    <label style="min-width:80px;">منفذ Native</label>
+                    <input type="number" id="mikrotikNativePort" value="8728" style="flex:1;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;">
+                </div>
+                <div style="background:#e8eaf6;padding:4px 10px;border:1px solid #7a7a7a;font-size:13px;border-radius:3px;color:#1a1a2e;">
+                    النوع: <strong id="mikrotikTypeDisplay">Hotspot</strong> &bull;
+                    عدد المستخدمين: <strong id="mikrotikCount">0</strong>
+                </div>
+                <div id="mikrotikSendLog" class="api-log" style="display:none;margin-top:4px;">
+                    <div class="log-entry info">🔄 جاهز للإرسال...</div>
+                </div>
+                <div id="mikrotikProgress" style="display:none;margin-top:4px;">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;">
+                        <span id="mikrotikProgressText">0%</span>
+                        <span id="mikrotikProgressCount">0 / 0</span>
+                    </div>
+                    <div class="progress-bar" style="height:6px;">
+                        <div class="progress-fill" id="mikrotikProgressFill" style="width:0%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-danger" onclick="closeMikrotikDialog()">✕ إلغاء</button>
+                <button class="btn btn-mikrotik" onclick="sendToMikrotik()" style="flex:1.5;">
+                    📤 إرسال الآن
+                </button>
+                <button class="btn btn-secondary" onclick="copyScriptToClipboard()" style="flex:1;">
+                    📋 نسخ السكريبت
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REST API Dialog -->
+    <div class="dialog-overlay" id="restApiDialog" onclick="if(event.target===this)closeRestApiDialog()">
+        <div class="dialog-content">
+            <div class="dialog-title">☁ REST API</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <div class="form-row">
+                    <div class="form-group"><label>IP</label><input type="text" id="restApiIP" value="10.0.0.1" style="width:100px;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;"></div>
+                    <div class="form-group"><label>المنفذ</label><input type="number" id="restApiPort" value="80" style="width:60px;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;"></div>
+                    <div class="form-group"><label>البروتوكول</label><select id="restApiProtocol" style="width:80px;border:2px solid #7a7a7a;padding:3px;border-radius:3px;"><option value="http">HTTP</option><option value="https">HTTPS</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>المستخدم</label><input type="text" id="restApiUser" value="admin" style="width:100px;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;"></div>
+                    <div class="form-group"><label>كلمة المرور</label><input type="password" id="restApiPassword" style="width:100px;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;"></div>
+                    <div class="form-group"><label>البروفايل</label><input type="text" id="restApiProfile" style="width:80px;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>الوضع</label><select id="restApiMode" style="width:100px;border:2px solid #7a7a7a;padding:3px;border-radius:3px;"><option value="single">واحد تلو الآخر</option><option value="batch" selected>دفعة واحدة</option></select></div>
+                    <div class="form-group"><label>تأخير</label><input type="number" id="restApiDelay" value="100" style="width:60px;border:2px solid #7a7a7a;padding:3px 8px;border-radius:3px;"> ms</div>
+                </div>
+                <div style="background:#e8eaf6;padding:4px 10px;border:1px solid #7a7a7a;font-size:13px;display:flex;flex-wrap:wrap;gap:8px;border-radius:3px;color:#1a1a2e;">
+                    <span>المستخدمين: <strong id="restApiCount">0</strong></span>
+                    <span>وقت متوقع: <span id="restApiEstimate">~0 ثانية</span></span>
+                </div>
+                <div id="restApiLog" class="api-log" style="display:none;">
+                    <div class="log-entry info">🔄 جاهز للإرسال...</div>
+                </div>
+                <div id="restApiProgress" style="display:none;margin-top:4px;">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;">
+                        <span id="restApiProgressText">0%</span>
+                        <span id="restApiProgressCount">0 / 0</span>
+                    </div>
+                    <div class="progress-bar" style="height:6px;">
+                        <div class="progress-fill" id="restApiProgressFill" style="width:0%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-danger" onclick="closeRestApiDialog()">✕ إلغاء</button>
+                <button class="btn btn-info" onclick="testRestApiConnection()">🔌 اختبار</button>
+                <button class="btn btn-primary" onclick="sendViaRestApi()">📤 إرسال</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expired Dialog -->
+    <div class="dialog-overlay" id="expiredDialog" onclick="if(event.target===this)closeExpiredDialog()">
+        <div class="dialog-content">
+            <div class="dialog-title">⏳ الكروت المنتهية</div>
+            <div style="margin-bottom:6px;color:#1a1a2e;">عدد المنتهية: <strong id="expiredCount">0</strong></div>
+            <div id="expiredList" style="max-height:150px;overflow-y:auto;border:2px solid #7a7a7a;padding:4px;border-radius:3px;"></div>
+            <div class="dialog-footer">
+                <button class="btn btn-danger" onclick="confirmDeleteExpired()">🗑 حذف الكل</button>
+                <button class="btn btn-warning" onclick="deleteSelectedExpired()">✓ حذف المحدد</button>
+                <button class="btn btn-secondary" onclick="closeExpiredDialog()">✕ إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    JAVASCRIPT - الكود الرئيسي (غير module)
+    ============================================================ -->
+    <script>
+        // ============================================================
+        // تحميل مكتبة mikroapi ديناميكياً
+        // ============================================================
+        let MikroApi = null;
+
+        // تحميل الوحدة
+        (async function loadMikroApi() {
+            try {
+                const module = await import('mikroapi');
+                MikroApi = module.default;
+                console.log('✅ تم تحميل مكتبة mikroapi بنجاح');
+            } catch (e) {
+                console.warn('⚠️ فشل تحميل mikroapi:', e.message);
+                // استمر في العمل بدونها (ستعمل REST API فقط)
+            }
+        })();
+
+        // ============================================================
+        // STATE
+        // ============================================================
+        let generatedNumbers = [];
+        let backgroundImage = null;
+        let currentDialogAction = null;
+        let isDarkMode = localStorage.getItem('darkMode') === 'true';
+        let currentLanguage = localStorage.getItem('language') || 'ar';
+        let expiredNumbers = [];
+        let cardCreationDate = new Date().toISOString().split('T')[0];
+        let isSending = false;
+        let currentType = 'hotspot'; // 'hotspot' or 'userman'
+
+        let elementPositions = {
+            username: { x: 70, y: 20, size: 9 },
+            password: { x: 70, y: 36, size: 7 },
+            'package-name': { x: 70, y: 52, size: 7 },
+            'package-details': { x: 70, y: 64, size: 5 },
+            serial: { x: 8, y: 152, size: 5 },
+            date: { x: 200, y: 152, size: 5 },
+            profile: { x: 70, y: 76, size: 5 },
+            'extra-note': { x: 70, y: 84, size: 5 },
+            qr: { x: 8, y: 8, size: 35 }
+        };
+        let selectedElement = 'username';
+
+        // ============================================================
+        // التبديل بين Hotspot و User Manager
+        // ============================================================
+        window.switchType = function(type) {
+            currentType = type;
+            document.getElementById('btnHotspot').classList.toggle('active', type === 'hotspot');
+            document.getElementById('btnUserManager').classList.toggle('active', type === 'userman');
+
+            const display = document.getElementById('currentTypeDisplay');
+            if (type === 'hotspot') {
+                display.innerHTML = '🟢 Hotspot';
+                display.style.color = '#2e7d32';
+            } else {
+                display.innerHTML = '🔵 User Manager';
+                display.style.color = '#0d47a1';
+            }
+
+            if (generatedNumbers.length > 0) {
+                generateScript();
+            }
+            showToast(`✅ تم التبديل إلى ${type === 'hotspot' ? 'Hotspot' : 'User Manager'}`, 'info');
+        };
+
+        // ============================================================
+        // TOAST
+        // ============================================================
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        };
+
+        // ============================================================
+        // THEME
+        // ============================================================
+        window.toggleTheme = function() {
+            isDarkMode = !isDarkMode;
+            localStorage.setItem('darkMode', isDarkMode);
+            if (isDarkMode) {
+                document.querySelector('.window').style.background = '#2d2d2d';
+                document.querySelector('.window').style.borderColor = '#555';
+                document.querySelector('.header').style.background = 'linear-gradient(135deg, #1a237e, #283593)';
+                document.querySelector('.header').style.borderBottomColor = '#3949ab';
+                document.querySelector('.header').style.color = '#eee';
+                document.body.style.background = '#1a1a1a';
+                document.querySelectorAll('.box').forEach(b => {
+                    b.style.background = '#333';
+                    b.style.borderColor = '#555';
+                    b.style.color = '#eee';
+                });
+                document.querySelectorAll('.box-title').forEach(t => t.style.color = '#eee');
+                document.querySelectorAll('.form-group label').forEach(l => l.style.color = '#ccc');
+                document.querySelectorAll('input, select').forEach(el => {
+                    el.style.background = '#444';
+                    el.style.color = '#eee';
+                    el.style.borderColor = '#666';
+                });
+                document.querySelectorAll('.btn').forEach(b => {
+                    if (!b.classList.contains('btn-primary') && !b.classList.contains('btn-success') &&
+                        !b.classList.contains('btn-danger') && !b.classList.contains('btn-warning') &&
+                        !b.classList.contains('btn-info') && !b.classList.contains('btn-mikrotik')) {
+                        b.style.background = '#444';
+                        b.style.color = '#eee';
+                        b.style.borderColor = '#666';
+                    }
+                });
+                document.querySelectorAll('.box-title .badge').forEach(b => b.style.background = '#444');
+                document.querySelector('.preview-area').style.borderColor = '#555';
+                document.querySelectorAll('.element-controls, .quick-settings').forEach(el => {
+                    el.style.background = '#3d3d3d';
+                    el.style.borderColor = '#555';
+                });
+                document.querySelector('.shortcuts-hint').style.background = '#3d3d3d';
+                document.querySelector('.shortcuts-hint').style.borderColor = '#555';
+                document.querySelector('.shortcuts-hint').style.color = '#ccc';
+                document.querySelectorAll('.shortcuts-hint kbd').forEach(k => {
+                    k.style.background = '#444';
+                    k.style.borderColor = '#666';
+                    k.style.color = '#eee';
+                });
+                document.querySelector('.dialog-content').style.background = '#2d2d2d';
+                document.querySelector('.dialog-content').style.borderColor = '#3949ab';
+                document.querySelector('.dialog-content').style.color = '#eee';
+                document.querySelectorAll('.dialog-title').forEach(t => t.style.color = '#eee');
+                document.getElementById('toastContainer').style.color = '#222';
+                document.querySelectorAll('.toast').forEach(t => {
+                    if (t.classList.contains('success')) t.style.background = '#2e7d32';
+                    if (t.classList.contains('error')) t.style.background = '#c62828';
+                    if (t.classList.contains('warning')) t.style.background = '#f57f17';
+                    if (t.classList.contains('info')) t.style.background = '#0d47a1';
+                    t.style.color = '#fff';
+                    t.style.borderColor = '#666';
+                });
+            } else {
+                location.reload();
+            }
+        };
+
+        // ============================================================
+        // LANGUAGE
+        // ============================================================
+        window.toggleLanguage = function() {
+            currentLanguage = currentLanguage === 'ar' ? 'en' : 'ar';
+            localStorage.setItem('language', currentLanguage);
+            document.documentElement.dir = currentLanguage === 'ar' ? 'rtl' : 'ltr';
+            showToast(`🌍 ${currentLanguage === 'ar' ? 'العربية' : 'English'}`, 'info');
+        };
+
+        // ============================================================
+        // LOAD PACKAGE
+        // ============================================================
+        window.loadPackage = function(speedVal, speedUnit, dataVal, dataUnit, days, name) {
+            document.getElementById('speedValue').value = speedVal;
+            document.getElementById('speedUnit').value = speedUnit;
+            document.getElementById('dataValue').value = dataVal;
+            document.getElementById('dataUnit').value = dataUnit;
+            document.getElementById('validityDays').value = days;
+            document.getElementById('packageName').value = name;
+            showToast(`✅ ${name} (${speedVal} ${speedUnit}, ${dataVal} ${dataUnit})`, 'success');
+            if (generatedNumbers.length > 0) {
+                generateScript();
+            }
+            updatePreview();
+        };
+
+        // ============================================================
+        // GENERATE NUMBERS
+        // ============================================================
+        window.generateNumbers = function() {
+            const pkgName = document.getElementById('packageName').value.trim() || 'باقة الإنترنت';
+            const speedVal = document.getElementById('speedValue').value || 10;
+            const speedUnit = document.getElementById('speedUnit').value || 'Mbps';
+            const dataVal = document.getElementById('dataValue').value || 5;
+            const dataUnit = document.getElementById('dataUnit').value || 'GB';
+            const validity = document.getElementById('validityDays').value || 30;
+            const price = document.getElementById('price').value || 0;
+            const expiryHours = parseInt(document.getElementById('expiryHours').value) || 24;
+
+            const beginNumber = parseInt(document.getElementById('beginNumber').value) || 1;
+            const length = parseInt(document.getElementById('numLength').value) || 8;
+            const count = parseInt(document.getElementById('numCount').value) || 10;
+            const passwordType = document.getElementById('passwordType').value;
+            const customPass = document.getElementById('customPassword').value.trim();
+            const profile = document.getElementById('profile').value.trim() || 'default';
+
+            if (length < 4) { showToast('⚠️ طول الرقم 4 أو أكثر!', 'error'); return; }
+            if (count > 5000) { showToast('⚠️ الحد الأقصى 5000', 'error'); return; }
+
+            generatedNumbers = [];
+            const date = new Date();
+            const dateStr = date.toISOString().split('T')[0];
+            cardCreationDate = dateStr;
+
+            let attempts = 0;
+            const maxAttempts = count * 10;
+            while (generatedNumbers.length < count && attempts < maxAttempts) {
+                attempts++;
+                let num = beginNumber.toString();
+                while (num.length < length) {
+                    num += Math.floor(Math.random() * 10);
+                }
+                if (!generatedNumbers.includes(num)) {
+                    generatedNumbers.push(num);
+                }
+            }
+
+            generatedNumbers.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+            document.getElementById('numBadge').textContent = generatedNumbers.length;
+            generateScript();
+            updateStats();
+            updatePreview();
+            updateNumbersTable();
+            showToast(`✅ ${generatedNumbers.length} كرت - ${pkgName} (${currentType === 'hotspot' ? 'Hotspot' : 'User Manager'})`, 'success');
+        };
+
+        // ============================================================
+        // GENERATE SCRIPT
+        // ============================================================
+        function generateScript() {
+            const pkgName = document.getElementById('packageName').value.trim() || 'باقة الإنترنت';
+            const speedVal = document.getElementById('speedValue').value || 10;
+            const speedUnit = document.getElementById('speedUnit').value || 'Mbps';
+            const dataVal = document.getElementById('dataValue').value || 5;
+            const dataUnit = document.getElementById('dataUnit').value || 'GB';
+            const validity = document.getElementById('validityDays').value || 30;
+            const price = document.getElementById('price').value || 0;
+            const expiryHours = parseInt(document.getElementById('expiryHours').value) || 24;
+            const profile = document.getElementById('profile').value.trim() || 'default';
+            const passwordType = document.getElementById('passwordType').value;
+            const customPass = document.getElementById('customPassword').value.trim();
+            const dateStr = new Date().toISOString().split('T')[0];
+
+            const speedDisplay = `${speedVal} ${speedUnit}`;
+            const dataDisplay = `${dataVal} ${dataUnit}`;
+            const validityDisplay = `${validity} يوم`;
+            const priceDisplay = price > 0 ? ` - ${price} ريال` : '';
+            const typeLabel = currentType === 'hotspot' ? 'Hotspot' : 'User Manager';
+
+            let result = '';
+            result += `# ============================================\n`;
+            result += `# سكريبت ${typeLabel} - ${pkgName}\n`;
+            result += `# السرعة: ${speedDisplay} | الحجم: ${dataDisplay}\n`;
+            result += `# المدة: ${validityDisplay} | صلاحية: ${expiryHours} ساعة\n`;
+            result += `# التاريخ: ${dateStr}\n`;
+            result += `# عدد المستخدمين: ${generatedNumbers.length}\n`;
+            result += `# البروفايل: ${profile}\n`;
+            result += `# النوع: ${typeLabel}\n`;
+            result += `# ============================================\n\n`;
+            result += `/log info "بدء إنشاء ${generatedNumbers.length} مستخدم (${typeLabel}) - ${pkgName}"\n\n`;
+
+            for (const num of generatedNumbers) {
+                let password = '';
+                if (passwordType === 'same') password = num;
+                else if (passwordType === 'empty') password = '""';
+                else if (passwordType === 'custom') password = customPass || num;
+
+                let cmd = '';
+                if (currentType === 'hotspot') {
+                    cmd = `/ip hotspot user add name=${num} password=${password} profile=${profile} comment="${pkgName} - ${speedDisplay} - ${dataDisplay} - ${expiryHours}h"\n`;
+                } else {
+                    cmd = `/user-manager user add name=${num} password=${password} profile=${profile} comment="${pkgName} - ${speedDisplay} - ${dataDisplay} - ${expiryHours}h"\n`;
+                }
+                result += cmd;
+            }
+
+            result += `\n/log info "✅ اكتمل إنشاء ${generatedNumbers.length} مستخدم (${typeLabel}) بنجاح!"\n`;
+
+            document.getElementById('output').value = result;
+            document.getElementById('scriptLines').textContent = result.split('\n').length + ' سطر';
+            document.getElementById('mikrotikTypeDisplay').textContent = currentType === 'hotspot' ? 'Hotspot' : 'User Manager';
+        }
+
+        // ============================================================
+        // UPDATE STATS
+        // ============================================================
+        function updateStats() {
+            const count = generatedNumbers.length;
+            document.getElementById('numBadge').textContent = count;
+            document.getElementById('previewCount').textContent = `${count} كروت`;
+            document.getElementById('packageBadge').textContent = count > 0 ? `${count} مولّد` : 'جاهزة';
+
+            const progress = count > 0 ? Math.min(100, Math.round((count / 5000) * 100)) : 0;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressPercent').textContent = progress + '%';
+
+            document.getElementById('restApiCount').textContent = count;
+            if (count > 0) {
+                const delay = parseInt(document.getElementById('restApiDelay').value) || 100;
+                document.getElementById('restApiEstimate').textContent = `~${Math.ceil((count * delay) / 1000)} ثانية`;
+            } else {
+                document.getElementById('restApiEstimate').textContent = '~0 ثانية';
+            }
+            document.getElementById('mikrotikCount').textContent = count;
+        }
+
+        // ============================================================
+        // UPDATE NUMBERS TABLE
+        // ============================================================
+        function updateNumbersTable(filteredNumbers = null) {
+            const tbody = document.getElementById('numbersTableBody');
+            tbody.innerHTML = '';
+            const validity = parseInt(document.getElementById('validityDays').value) || 30;
+            const creationDate = new Date(cardCreationDate);
+
+            const nums = filteredNumbers || generatedNumbers;
+
+            nums.forEach((num, i) => {
+                const tr = document.createElement('tr');
+                const status = getCardStatus(creationDate, validity);
+                const statusLabel = status === 'active' ? 'نشط' : status === 'expiring-soon' ? 'ينتهي قريباً' :
+                    'منتهي';
+                const statusClass = status === 'active' ? 'active' : status === 'expiring-soon' ? 'expiring-soon' :
+                    'expired';
+
+                tr.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td><strong>${num}</strong></td>
+                    <td>${num}</td>
+                    <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                `;
+                if (status === 'expired') {
+                    tr.classList.add('expired');
+                    tr.dataset.expired = 'true';
+                }
+                tbody.appendChild(tr);
+            });
+            document.getElementById('tableCount').textContent = nums.length;
+        }
+
+        function getCardStatus(creationDate, validityDays) {
+            const now = new Date();
+            const expiryDate = new Date(creationDate);
+            expiryDate.setDate(expiryDate.getDate() + validityDays);
+            const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+            if (daysRemaining < 0) return 'expired';
+            if (daysRemaining <= 3) return 'expiring-soon';
+            return 'active';
+        }
+
+        window.showNumbersTable = function() {
+            const card = document.getElementById('numbersTableCard');
+            if (card.style.display === 'none') {
+                if (generatedNumbers.length === 0) {
+                    showToast('⚠️ لا توجد أرقام!', 'warning');
+                    return;
+                }
+                card.style.display = 'block';
+                updateNumbersTable();
+            } else {
+                card.style.display = 'none';
+            }
+        };
+
+        // ============================================================
+        // SEARCH
+        // ============================================================
+        window.toggleSearch = function() {
+            const box = document.getElementById('searchBox');
+            box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+            if (box.style.display !== 'none') {
+                document.getElementById('searchInput').focus();
+            }
+        };
+
+        window.quickSearch = function() {
+            const val = document.getElementById('searchInput').value.trim().toLowerCase();
+            if (val.length < 1) {
+                updateNumbersTable();
+                return;
+            }
+            const filtered = generatedNumbers.filter(n => n.includes(val));
+            if (filtered.length > 0) {
+                showToast(`🔍 تم العثور على ${filtered.length} رقم`, 'info');
+                updateNumbersTable(filtered);
+            } else {
+                showToast(`❌ لم يتم العثور على "${val}"`, 'warning');
+                updateNumbersTable([]);
+            }
+        };
+
+        // ============================================================
+        // EXPIRED
+        // ============================================================
+        window.showExpiredDialog = function() {
+            if (generatedNumbers.length === 0) {
+                showToast('⚠️ لا توجد أرقام!', 'warning');
+                return;
+            }
+
+            const creationDate = new Date(cardCreationDate);
+            const validity = parseInt(document.getElementById('validityDays').value) || 30;
+
+            expiredNumbers = generatedNumbers.filter(num => {
+                return getCardStatus(creationDate, validity) === 'expired';
+            });
+
+            document.getElementById('expiredCount').textContent = expiredNumbers.length;
+
+            const listDiv = document.getElementById('expiredList');
+            if (expiredNumbers.length > 0) {
+                listDiv.innerHTML = expiredNumbers.map((num, i) =>
+                    `<div style="display:flex;justify-content:space-between;padding:2px 4px;border-bottom:1px solid #ddd;font-size:13px;">
+                        <span><input type="checkbox" class="expired-checkbox" data-num="${num}" checked> ${i+1}. <strong>${num}</strong></span>
+                    </div>`
+                ).join('');
+            } else {
+                listDiv.innerHTML = '<div style="text-align:center;padding:12px;color:#666;">🎉 لا توجد كروت منتهية!</div>';
+            }
+
+            document.getElementById('expiredDialog').style.display = 'flex';
+        };
+
+        window.closeExpiredDialog = function() {
+            document.getElementById('expiredDialog').style.display = 'none';
+        };
+
+        window.confirmDeleteExpired = function() {
+            if (expiredNumbers.length === 0) {
+                showToast('⚠️ لا توجد كروت منتهية', 'warning');
+                return;
+            }
+            if (confirm(`حذف ${expiredNumbers.length} كرت منتهي؟`)) {
+                const toDelete = [...expiredNumbers];
+                generatedNumbers = generatedNumbers.filter(num => !toDelete.includes(num));
+                expiredNumbers = [];
+                document.getElementById('numBadge').textContent = generatedNumbers.length;
+                updateStats();
+                generateScript();
+                updatePreview();
+                updateNumbersTable();
+                closeExpiredDialog();
+                showToast(`✅ تم حذف ${toDelete.length} كرت`, 'success');
+            }
+        };
+
+        window.deleteSelectedExpired = function() {
+            const checkboxes = document.querySelectorAll('.expired-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showToast('⚠️ يرجى تحديد الكروت', 'warning');
+                return;
+            }
+            const toDelete = Array.from(checkboxes).map(cb => cb.dataset.num);
+            if (confirm(`حذف ${toDelete.length} كرت؟`)) {
+                generatedNumbers = generatedNumbers.filter(num => !toDelete.includes(num));
+                expiredNumbers = expiredNumbers.filter(num => !toDelete.includes(num));
+                document.getElementById('numBadge').textContent = generatedNumbers.length;
+                updateStats();
+                generateScript();
+                updatePreview();
+                updateNumbersTable();
+                showExpiredDialog();
+                showToast(`✅ تم حذف ${toDelete.length} كرت`, 'success');
+            }
+        };
+
+        // ============================================================
+        // EXPORT FUNCTIONS
+        // ============================================================
+        window.exportTableToCSV = function() {
+            if (generatedNumbers.length === 0) {
+                showToast('⚠️ لا توجد بيانات', 'warning');
+                return;
+            }
+            let csv = '#,الرقم,كلمة المرور,الحالة,النوع\n';
+            const creationDate = new Date(cardCreationDate);
+            const validity = parseInt(document.getElementById('validityDays').value) || 30;
+            generatedNumbers.forEach((num, i) => {
+                const status = getCardStatus(creationDate, validity);
+                const statusLabel = status === 'active' ? 'نشط' : status === 'expiring-soon' ? 'ينتهي قريباً' :
+                    'منتهي';
+                csv += `${i+1},${num},${num},${statusLabel},${currentType === 'hotspot' ? 'Hotspot' : 'User Manager'}\n`;
+            });
+            downloadFile(csv, 'csv', 'cards');
+            showToast('✅ تم تصدير CSV', 'success');
+        };
+
+        window.exportToJSON = function() {
+            if (generatedNumbers.length === 0) {
+                showToast('⚠️ لا توجد بيانات!', 'error');
+                return;
+            }
+            const data = {
+                metadata: {
+                    generatedAt: new Date().toISOString(),
+                    type: currentType === 'hotspot' ? 'Hotspot' : 'User Manager',
+                    package: document.getElementById('packageName').value,
+                    speed: `${document.getElementById('speedValue').value} ${document.getElementById('speedUnit').value}`,
+                    data: `${document.getElementById('dataValue').value} ${document.getElementById('dataUnit').value}`,
+                    validity: `${document.getElementById('validityDays').value} يوم`,
+                    profile: document.getElementById('profile').value,
+                    total: generatedNumbers.length
+                },
+                cards: generatedNumbers.map((num, index) => ({
+                    id: index + 1,
+                    username: num,
+                    password: num,
+                    type: currentType === 'hotspot' ? 'Hotspot' : 'User Manager',
+                    status: getCardStatus(new Date(cardCreationDate), parseInt(document.getElementById('validityDays')
+                        .value))
+                }))
+            };
+            downloadFile(JSON.stringify(data, null, 2), 'json', 'hotspot_data');
+            showToast('✅ تم تصدير JSON', 'success');
+        };
+
+        function downloadFile(content, ext, prefix) {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            const p = document.getElementById('filePrefix').value || 'hotspot';
+            const date = new Date().toISOString().split('T')[0];
+            const count = generatedNumbers.length || 0;
+            link.download = `${p}_${count}_${date}.${ext}`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        // ============================================================
+        // SAVE FUNCTIONS
+        // ============================================================
+        window.saveAsTxt = function() {
+            if (!generatedNumbers.length) { showToast('⚠️ لا توجد أرقام!', 'error'); return; }
+            downloadFile(generatedNumbers.join('\n'), 'txt', 'numbers');
+        };
+
+        window.saveAsMikroTik = function() {
+            const text = document.getElementById('output').value.trim();
+            if (!text) { showToast('⚠️ لا يوجد سكريبت!', 'error'); return; }
+            downloadFile(text, 'txt', 'hotspot_script');
+        };
+
+        window.saveAsExcel = function() {
+            if (!generatedNumbers.length) { showToast('⚠️ لا توجد أرقام!', 'error'); return; }
+            const profile = document.getElementById('profile').value || 'default';
+            const pkgName = document.getElementById('packageName').value || '';
+            const speed = `${document.getElementById('speedValue').value} ${document.getElementById('speedUnit').value}`;
+            const data = `${document.getElementById('dataValue').value} ${document.getElementById('dataUnit').value}`;
+            const validity = document.getElementById('validityDays').value || '';
+            const expiryHours = document.getElementById('expiryHours').value || '';
+
+            const dataArr = generatedNumbers.map((num, i) => ({
+                '#': i + 1,
+                'اسم المستخدم': num,
+                'كلمة المرور': num,
+                'النوع': currentType === 'hotspot' ? 'Hotspot' : 'User Manager',
+                'الباقة': pkgName,
+                'السرعة': speed,
+                'حجم البيانات': data,
+                'المدة (أيام)': validity,
+                'صلاحية (ساعات)': expiryHours,
+                'البروفايل': profile,
+                'الحالة': getCardStatus(new Date(cardCreationDate), parseInt(validity)) === 'active' ? 'نشط' :
+                    'منتهي'
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(dataArr);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Hotspot');
+            XLSX.writeFile(wb, getFilename('xlsx'));
+            showToast('✅ تم تصدير Excel', 'success');
+        };
+
+        function getFilename(ext) {
+            const p = document.getElementById('filePrefix').value || 'hotspot';
+            const date = new Date().toISOString().split('T')[0];
+            const count = generatedNumbers.length || 0;
+            return `${p}_${count}_${date}.${ext}`;
+        }
+
+        window.copyScript = function() {
+            const text = document.getElementById('output').value;
+            if (!text) { showToast('⚠️ لا يوجد سكريبت!', 'error'); return; }
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('✅ تم نسخ السكريبت!', 'success');
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                ta.remove();
+                showToast('✅ تم النسخ!', 'success');
+            });
+        };
+
+        window.copyScriptToClipboard = function() {
+            const text = document.getElementById('output').value;
+            if (!text) { showToast('⚠️ لا يوجد سكريبت!', 'error'); return; }
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('✅ تم نسخ السكريبت!', 'success');
+                updateConnectionStatus(true, '✅ تم النسخ', `${generatedNumbers.length} مستخدم (${currentType === 'hotspot' ? 'Hotspot' : 'User Manager'})`);
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                ta.remove();
+                showToast('✅ تم النسخ!', 'success');
+                updateConnectionStatus(true, '✅ تم النسخ', `${generatedNumbers.length} مستخدم (${currentType === 'hotspot' ? 'Hotspot' : 'User Manager'})`);
+            });
+        };
+
+        window.clearAll = function() {
+            generatedNumbers = [];
+            document.getElementById('output').value = '';
+            document.getElementById('previewWrapper').querySelector('.placeholder').style.display = 'block';
+            document.getElementById('previewCard').style.display = 'none';
+            backgroundImage = null;
+            document.getElementById('backgroundImage').value = '';
+            document.getElementById('numBadge').textContent = '0';
+            document.getElementById('numbersTableCard').style.display = 'none';
+            updateStats();
+            showToast('🔄 تم مسح الكل', 'info');
+        };
+
+        // ============================================================
+        // PDF GENERATION
+        // ============================================================
+        window.generatePDF = function() {
+            if (!generatedNumbers.length) {
+                showToast('⚠️ لا توجد أرقام!', 'error');
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: document.getElementById('paperSize').value || 'a4'
+            });
+            generateCardsPages(pdf);
+            pdf.save(getFilename('pdf'));
+            showToast('✅ تم حفظ PDF', 'success');
+        };
+
+        window.saveFullReportPDF = function() {
+            if (generatedNumbers.length === 0) {
+                showToast('⚠️ لا توجد أرقام!', 'error');
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: document.getElementById('paperSize').value || 'a4'
+            });
+            generateCardsPages(pdf);
+            pdf.save(`report_${getFilename('pdf')}`);
+            showToast('✅ تم حفظ التقرير', 'success');
+        };
+
+        function generateCardsPages(pdf) {
+            const cols = parseInt(document.getElementById('columns').value) || 2;
+            const rows = parseInt(document.getElementById('rows').value) || 8;
+            const margin = 5;
+            const boxSpacing = 1;
+            const textColor = document.getElementById('textColor').value || '#1a1a2e';
+            const showPass = document.getElementById('showPassword').checked;
+            const showPackage = document.getElementById('showPackageInfo').checked;
+            const useSerial = document.getElementById('useSerialNumber').checked;
+            const useDate = document.getElementById('useDatePrinting').checked;
+            const useQR = document.getElementById('useQRCode').checked;
+            const useTimer = document.getElementById('useTimer').checked;
+            const profile = document.getElementById('profile').value || 'default';
+            const extraNote = document.getElementById('extraNote').value || '';
+            const watermarkText = document.getElementById('watermarkText').value || '';
+            const expiryHours = parseInt(document.getElementById('expiryHours').value) || 24;
+
+            const pkgName = document.getElementById('packageName').value || 'باقة الإنترنت';
+            const speedVal = document.getElementById('speedValue').value || 10;
+            const speedUnit = document.getElementById('speedUnit').value || 'Mbps';
+            const dataVal = document.getElementById('dataValue').value || 5;
+            const dataUnit = document.getElementById('dataUnit').value || 'GB';
+            const validity = document.getElementById('validityDays').value || 30;
+            const price = document.getElementById('price').value || 0;
+            const typeLabel = currentType === 'hotspot' ? 'Hotspot' : 'User Manager';
+
+            const speedDisplay = `${speedVal} ${speedUnit}`;
+            const dataDisplay = `${dataVal} ${dataUnit}`;
+            const priceDisplay = price > 0 ? ` | ${price} ريال` : '';
+            const today = new Date().toISOString().split('T')[0];
+
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const boxWidth = (pageWidth - 2 * margin - boxSpacing * (cols - 1)) / cols;
+            const boxHeight = (pageHeight - 2 * margin - boxSpacing * (rows - 1)) / rows;
+
+            const total = generatedNumbers.length;
+            const perPage = cols * rows;
+            const totalPages = Math.ceil(total / perPage);
+
+            const textColorRgb = hexToRgb(textColor);
+
+            const getPos = (id) => elementPositions[id] || { x: 70, y: 20, size: 8 };
+            const SCALE_X = boxWidth / 280;
+            const SCALE_Y = boxHeight / 175;
+
+            for (let page = 0; page < totalPages; page++) {
+                if (page > 0) pdf.addPage();
+
+                for (let i = 0; i < Math.min(perPage, total - page * perPage); i++) {
+                    const idx = page * perPage + i;
+                    const col = i % cols;
+                    const row = Math.floor(i / cols);
+                    const x = margin + col * (boxWidth + boxSpacing);
+                    const y = margin + row * (boxHeight + boxSpacing);
+
+                    pdf.setDrawColor(200, 200, 200);
+                    pdf.setLineWidth(0.3);
+                    pdf.rect(x, y, boxWidth, boxHeight);
+
+                    if (backgroundImage) {
+                        try {
+                            pdf.addImage(backgroundImage, 'JPEG', x, y, boxWidth, boxHeight);
+                        } catch (e) {}
+                    }
+
+                    if (watermarkText) {
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.setFontSize(30);
+                        pdf.setTextColor(200, 200, 200);
+                        pdf.setGState(new pdf.GState({ opacity: 0.08 }));
+                        pdf.text(watermarkText, x + boxWidth / 2, y + boxHeight / 2, { align: 'center',
+                            angle: -25 });
+                        pdf.setGState(new pdf.GState({ opacity: 1 }));
+                    }
+
+                    const num = generatedNumbers[idx];
+                    const serialStart = 1;
+
+                    const uPos = getPos('username');
+                    const uSize = Math.max(4, uPos.size * 0.7);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(uSize);
+                    pdf.setTextColor(textColorRgb.r, textColorRgb.g, textColorRgb.b);
+                    pdf.text(num, x + (uPos.x * SCALE_X), y + (uPos.y * SCALE_Y) + (uSize * 0.35));
+
+                    if (showPass) {
+                        const pPos = getPos('password');
+                        const pSize = Math.max(3, pPos.size * 0.65);
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setFontSize(pSize);
+                        pdf.setTextColor(80, 80, 80);
+                        pdf.text(`🔑 ${num}`, x + (pPos.x * SCALE_X), y + (pPos.y * SCALE_Y) + (pSize * 0.35));
+                    }
+
+                    if (showPackage) {
+                        const pPos = getPos('package-name');
+                        const pSize = Math.max(3, pPos.size * 0.65);
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.setFontSize(pSize);
+                        pdf.setTextColor(60, 60, 60);
+                        pdf.text(pkgName, x + (pPos.x * SCALE_X), y + (pPos.y * SCALE_Y) + (pSize * 0.35));
+                    }
+
+                    if (showPackage) {
+                        const pPos = getPos('package-details');
+                        const pSize = Math.max(3, pPos.size * 0.6);
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setFontSize(pSize);
+                        pdf.setTextColor(100, 100, 100);
+                        pdf.text(`⚡ ${speedDisplay} | 💾 ${dataDisplay} | 📅 ${validity} يوم${priceDisplay} | 📌 ${typeLabel}`,
+                            x + (pPos.x * SCALE_X), y + (pPos.y * SCALE_Y) + (pSize * 0.35));
+                    }
+
+                    const prPos = getPos('profile');
+                    const prSize = Math.max(3, prPos.size * 0.6);
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(prSize);
+                    pdf.setTextColor(150, 150, 150);
+                    pdf.text(`📶 ${profile}`, x + (prPos.x * SCALE_X), y + (prPos.y * SCALE_Y) + (prSize * 0.35));
+
+                    if (extraNote) {
+                        const ePos = getPos('extra-note');
+                        const eSize = Math.max(3, ePos.size * 0.55);
+                        pdf.setFont('helvetica', 'italic');
+                        pdf.setFontSize(eSize);
+                        pdf.setTextColor(120, 120, 120);
+                        pdf.text(extraNote, x + (ePos.x * SCALE_X), y + (ePos.y * SCALE_Y) + (eSize * 0.35));
+                    }
+
+                    if (useSerial) {
+                        const sPos = getPos('serial');
+                        const sSize = Math.max(3, sPos.size * 0.6);
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.setFontSize(sSize);
+                        pdf.setTextColor(150, 150, 150);
+                        pdf.text(`#${serialStart + idx}`, x + (sPos.x * SCALE_X), y + (sPos.y * SCALE_Y) + (sSize *
+                            0.35));
+                    }
+
+                    if (useDate) {
+                        const dPos = getPos('date');
+                        const dSize = Math.max(3, dPos.size * 0.6);
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setFontSize(dSize);
+                        pdf.setTextColor(150, 150, 150);
+                        pdf.text(today, x + (dPos.x * SCALE_X), y + (dPos.y * SCALE_Y) + (dSize * 0.35));
+                    }
+
+                    if (useTimer) {
+                        const now = new Date();
+                        const expiry = new Date(cardCreationDate);
+                        expiry.setHours(expiry.getHours() + expiryHours);
+                        const diff = Math.max(0, Math.floor((expiry - now) / 1000));
+                        const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+                        const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+                        const s = String(diff % 60).padStart(2, '0');
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setFontSize(4);
+                        pdf.setTextColor(100, 100, 100);
+                        pdf.text(`⏱ ${h}:${m}:${s}`, x + boxWidth - 20, y + boxHeight - 4);
+                    }
+
+                    if (useQR) {
+                        const qPos = getPos('qr');
+                        const qrSizeMm = Math.max(8, (qPos.size || 35) * 0.5);
+                        pdf.setDrawColor(200, 200, 200);
+                        pdf.setLineWidth(0.2);
+                        pdf.rect(x + (qPos.x * SCALE_X), y + (qPos.y * SCALE_Y), qrSizeMm, qrSizeMm);
+                        pdf.setFontSize(3);
+                        pdf.setTextColor(200, 200, 200);
+                        pdf.text('QR', x + (qPos.x * SCALE_X) + qrSizeMm / 2 - 2, y + (qPos.y * SCALE_Y) + qrSizeMm /
+                            2 + 1);
+                    }
+                }
+            }
+        }
+
+        window.printCards = function() {
+            if (generatedNumbers.length === 0) {
+                showToast('⚠️ لا توجد كروت للطباعة!', 'error');
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: document.getElementById('paperSize').value || 'a4'
+            });
+            generateCardsPages(pdf);
+            const blob = pdf.output('blob');
+            const url = URL.createObjectURL(blob);
+            const win = window.open(url, '_blank');
+            if (win) {
+                win.onload = function() { setTimeout(() => win.print(), 500); };
+            } else {
+                showToast('⚠️ يرجى السماح للنوافذ المنبثقة', 'warning');
+            }
+        };
+
+        window.exportAllQRsToPDF = function() {
+            if (generatedNumbers.length === 0) {
+                showToast('⚠️ لا توجد أرقام!', 'error');
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('landscape', 'mm', 'a4');
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const cols = 4,
+                rows = 3,
+                qrSize = 35,
+                margin = 10,
+                spacing = 5;
+            let index = 0;
+            const total = generatedNumbers.length;
+            while (index < total) {
+                if (index > 0) pdf.addPage();
+                for (let row = 0; row < rows && index < total; row++) {
+                    for (let col = 0; col < cols && index < total; col++) {
+                        const x = margin + col * (qrSize + spacing);
+                        const y = margin + row * (qrSize + spacing + 15);
+                        const num = generatedNumbers[index];
+                        pdf.setDrawColor(200, 200, 200);
+                        pdf.setLineWidth(0.3);
+                        pdf.rect(x - 2, y - 2, qrSize + 4, qrSize + 18);
+                        pdf.setFontSize(6);
+                        pdf.setTextColor(100, 100, 100);
+                        pdf.text(num, x + qrSize / 2, y + qrSize + 6, { align: 'center' });
+                        pdf.setFontSize(4);
+                        pdf.setTextColor(150, 150, 150);
+                        pdf.text(`#${index + 1}`, x + 2, y + qrSize + 14);
+                        index++;
+                    }
+                }
+            }
+            pdf.save(`qr_codes_${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast('✅ تم تصدير QR Codes', 'success');
+        };
+
+        // ============================================================
+        // ADVANCED STATS
+        // ============================================================
+        window.showAdvancedStats = function() {
+            if (generatedNumbers.length === 0) {
+                showToast('⚠️ لا توجد بيانات!', 'error');
+                return;
+            }
+            const total = generatedNumbers.length;
+            const validity = parseInt(document.getElementById('validityDays').value) || 30;
+            const creationDate = new Date(cardCreationDate);
+            let active = 0,
+                expiring = 0,
+                expired = 0;
+            generatedNumbers.forEach(() => {
+                const status = getCardStatus(creationDate, validity);
+                if (status === 'active') active++;
+                else if (status === 'expiring-soon') expiring++;
+                else expired++;
+            });
+            const usageRate = total > 0 ? ((active / total) * 100).toFixed(1) : 0;
+            const msg =
+                `📊 إحصائيات:\n━━━━━━━━━━━━━━\n📌 النوع: ${currentType === 'hotspot' ? 'Hotspot' : 'User Manager'}\n📌 الإجمالي: ${total}\n✅ نشطة: ${active} (${usageRate}%)\n⚠️ تنتهي قريباً: ${expiring}\n❌ منتهية: ${expired}\n📅 التاريخ: ${creationDate.toLocaleDateString()}\n⏳ المدة: ${validity} يوم`;
+            showToast(msg, 'info');
+        };
+
+        // ============================================================
+        // PREVIEW
+        // ============================================================
+        function updatePreview() {
+            const wrapper = document.getElementById('previewWrapper');
+            const placeholder = wrapper.querySelector('.placeholder');
+            const card = document.getElementById('previewCard');
+            const bg = document.getElementById('cardBackground');
+
+            if (generatedNumbers.length === 0) {
+                placeholder.style.display = 'block';
+                card.style.display = 'none';
+                return;
+            }
+
+            placeholder.style.display = 'none';
+            card.style.display = 'block';
+
+            if (backgroundImage) {
+                bg.style.backgroundImage = `url(${backgroundImage})`;
+            } else {
+                bg.style.backgroundImage = '';
+            }
+
+            const watermarkText = document.getElementById('watermarkText').value;
+            const watermarkColor = document.getElementById('watermarkColor').value;
+            const watermarkSize = document.getElementById('watermarkSize').value || 30;
+            const wmEl = document.getElementById('watermarkElement');
+            if (watermarkText) {
+                wmEl.textContent = watermarkText;
+                wmEl.style.color = watermarkColor + '15';
+                wmEl.style.fontSize = watermarkSize + 'px';
+                wmEl.style.display = 'flex';
+            } else {
+                wmEl.style.display = 'none';
+            }
+
+            const num = generatedNumbers[0];
+            const textColor = document.getElementById('textColor').value || '#1a1a2e';
+            const showPass = document.getElementById('showPassword').checked;
+            const showPackage = document.getElementById('showPackageInfo').checked;
+            const useSerial = document.getElementById('useSerialNumber').checked;
+            const useDate = document.getElementById('useDatePrinting').checked;
+            const useQR = document.getElementById('useQRCode').checked;
+            const useTimer = document.getElementById('useTimer').checked;
+
+            const pkgName = document.getElementById('packageName').value || 'باقة الإنترنت';
+            const speedVal = document.getElementById('speedValue').value || 10;
+            const speedUnit = document.getElementById('speedUnit').value || 'Mbps';
+            const dataVal = document.getElementById('dataValue').value || 5;
+            const dataUnit = document.getElementById('dataUnit').value || 'GB';
+            const validity = document.getElementById('validityDays').value || 30;
+            const price = document.getElementById('price').value || 0;
+            const extraNote = document.getElementById('extraNote').value || '';
+            const profile = document.getElementById('profile').value || 'default';
+            const expiryHours = parseInt(document.getElementById('expiryHours').value) || 24;
+            const typeLabel = currentType === 'hotspot' ? 'Hotspot' : 'User Manager';
+
+            const speedDisplay = `${speedVal} ${speedUnit}`;
+            const dataDisplay = `${dataVal} ${dataUnit}`;
+            const priceDisplay = price > 0 ? ` | ${price} ريال` : '';
+            const today = new Date().toISOString().split('T')[0];
+
+            const existingElements = card.querySelectorAll('.drag-element:not(.watermark)');
+            existingElements.forEach(el => el.remove());
+
+            const elements = [];
+            const pos = (id) => elementPositions[id] || { x: 70, y: 20, size: 8 };
+
+            elements.push({
+                id: 'username',
+                className: 'drag-element username',
+                text: num,
+                x: pos('username').x,
+                y: pos('username').y,
+                size: pos('username').size,
+                color: textColor
+            });
+
+            if (showPass) {
+                const p = pos('password');
+                elements.push({
+                    id: 'password',
+                    className: 'drag-element password',
+                    text: `🔑 ${num}`,
+                    x: p.x,
+                    y: p.y,
+                    size: p.size,
+                    color: textColor
+                });
+            }
+
+            if (showPackage) {
+                const p = pos('package-name');
+                elements.push({
+                    id: 'package-name',
+                    className: 'drag-element package-name',
+                    text: pkgName,
+                    x: p.x,
+                    y: p.y,
+                    size: p.size,
+                    color: textColor
+                });
+                const p2 = pos('package-details');
+                elements.push({
+                    id: 'package-details',
+                    className: 'drag-element package-details',
+                    text: `⚡ ${speedDisplay} | 💾 ${dataDisplay} | 📅 ${validity} يوم${priceDisplay} | 📌 ${typeLabel}`,
+                    x: p2.x,
+                    y: p2.y,
+                    size: p2.size,
+                    color: textColor
+                });
+            }
+
+            const pr = pos('profile');
+            elements.push({
+                id: 'profile',
+                className: 'drag-element profile',
+                text: `📶 ${profile}`,
+                x: pr.x,
+                y: pr.y,
+                size: pr.size,
+                color: '#888'
+            });
+
+            if (extraNote) {
+                const e = pos('extra-note');
+                elements.push({
+                    id: 'extra-note',
+                    className: 'drag-element extra-note',
+                    text: extraNote,
+                    x: e.x,
+                    y: e.y,
+                    size: e.size,
+                    color: '#777'
+                });
+            }
+
+            if (useSerial) {
+                const s = pos('serial');
+                const serialStart = 1;
+                elements.push({
+                    id: 'serial',
+                    className: 'drag-element serial',
+                    text: `#${serialStart}`,
+                    x: s.x,
+                    y: s.y,
+                    size: s.size,
+                    color: '#666'
+                });
+            }
+
+            if (useDate) {
+                const d = pos('date');
+                elements.push({
+                    id: 'date',
+                    className: 'drag-element date',
+                    text: today,
+                    x: d.x,
+                    y: d.y,
+                    size: d.size,
+                    color: '#666'
+                });
+            }
+
+            elements.forEach(el => {
+                const div = document.createElement('div');
+                div.className = el.className;
+                div.textContent = el.text;
+                div.style.cssText = `
+                    left: ${el.x}px;
+                    top: ${el.y}px;
+                    font-size: ${el.size}px;
+                    color: ${el.color};
+                    position: absolute;
+                    touch-action: none;
+                    user-select: none;
+                    padding: 2px 6px;
+                    border: 2px solid transparent;
+                    z-index: 10;
+                    text-align: center;
+                    min-width: 16px;
+                    border-radius: 3px;
+                `;
+                div.dataset.elementId = el.id;
+                card.appendChild(div);
+                makeElementDraggable(div);
+            });
+
+            if (useQR) {
+                const q = pos('qr');
+                const qrSize = q.size || 35;
+                const qrDiv = document.createElement('div');
+                qrDiv.id = 'previewQR';
+                qrDiv.className = 'drag-element qr-code';
+                qrDiv.style.cssText = `
+                    left: ${q.x}px;
+                    top: ${q.y}px;
+                    width: ${qrSize}px;
+                    height: ${qrSize}px;
+                    position: absolute;
+                    touch-action: none;
+                    background: white;
+                    border: 2px solid #7a7a7a;
+                    padding: 3px;
+                    z-index: 10;
+                    border-radius: 3px;
+                `;
+                qrDiv.dataset.elementId = 'qr';
+                card.appendChild(qrDiv);
+
+                setTimeout(() => {
+                    try {
+                        const container = document.getElementById('previewQR');
+                        if (container && window.QRCode) {
+                            container.innerHTML = '';
+                            new QRCode(container, {
+                                text: num,
+                                width: qrSize - 8,
+                                height: qrSize - 8,
+                                colorDark: '#1a1a2e',
+                                colorLight: '#ffffff',
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                            makeElementDraggable(container);
+                        }
+                    } catch (e) {}
+                }, 50);
+            }
+
+            updateDragControls();
+            updateStats();
+        }
+
+        window.updatePreview = updatePreview;
+
+        // ============================================================
+        // DRAG & DROP
+        // ============================================================
+        function makeElementDraggable(element) {
+            let isDragging = false;
+            let startX, startY, origX, origY;
+
+            const startDrag = (e) => {
+                const target = e.currentTarget || e.target;
+                if (target.closest('canvas')) return;
+
+                isDragging = true;
+                const touch = e.touches ? e.touches[0] : e;
+                startX = touch.clientX;
+                startY = touch.clientY;
+                origX = parseInt(target.style.left) || 0;
+                origY = parseInt(target.style.top) || 0;
+                target.classList.add('dragging');
+                target.style.zIndex = 100;
+
+                const elementId = target.dataset.elementId;
+                if (elementId) {
+                    const select = document.getElementById('dragElementSelect');
+                    if (select) {
+                        const option = Array.from(select.options).find(o => o.value === elementId);
+                        if (option) {
+                            select.value = elementId;
+                            selectedElement = elementId;
+                            updateDragControls();
+                        }
+                    }
+                }
+
+                e.preventDefault();
+            };
+
+            const moveDrag = (e) => {
+                if (!isDragging) return;
+                const touch = e.touches ? e.touches[0] : e;
+                const deltaX = touch.clientX - startX;
+                const deltaY = touch.clientY - startY;
+
+                const parentRect = element.parentElement.getBoundingClientRect();
+                const maxX = parentRect.width - parseInt(element.style.width) - 10 || 260;
+                const maxY = parentRect.height - parseInt(element.style.height) - 10 || 160;
+
+                const newX = Math.max(0, Math.min(maxX, origX + deltaX));
+                const newY = Math.max(0, Math.min(maxY, origY + deltaY));
+                element.style.left = newX + 'px';
+                element.style.top = newY + 'px';
+
+                const elementId = element.dataset.elementId;
+                if (elementId && elementPositions[elementId]) {
+                    elementPositions[elementId].x = newX;
+                    elementPositions[elementId].y = newY;
+                    updateDragControls();
+                }
+                e.preventDefault();
+            };
+
+            const endDrag = () => {
+                if (isDragging) {
+                    element.classList.remove('dragging');
+                    element.style.zIndex = 10;
+                    isDragging = false;
+                }
+            };
+
+            element.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', moveDrag);
+            document.addEventListener('mouseup', endDrag);
+
+            element.addEventListener('touchstart', startDrag, { passive: false });
+            document.addEventListener('touchmove', moveDrag, { passive: false });
+            document.addEventListener('touchend', endDrag, { passive: false });
+            document.addEventListener('touchcancel', endDrag, { passive: false });
+        }
+
+        // ============================================================
+        // DRAG CONTROLS
+        // ============================================================
+        function updateDragControls() {
+            const select = document.getElementById('dragElementSelect');
+            const elementId = select ? select.value : 'username';
+            selectedElement = elementId;
+
+            const pos = elementPositions[elementId];
+            if (pos) {
+                document.getElementById('dragXNum').value = Math.round(pos.x);
+                document.getElementById('dragYNum').value = Math.round(pos.y);
+                document.getElementById('dragSizeNum').value = pos.size;
+            }
+
+            document.querySelectorAll('.drag-element').forEach(el => {
+                el.style.outline = 'none';
+                el.style.boxShadow = 'none';
+                if (el.dataset.elementId === elementId) {
+                    el.style.outline = '2px solid #3949ab';
+                    el.style.boxShadow = '0 0 0 3px rgba(57,73,171,0.15)';
+                }
+            });
+        }
+
+        window.selectElement = function() {
+            const select = document.getElementById('dragElementSelect');
+            selectedElement = select.value;
+            updateDragControls();
+        };
+
+        window.updateDragFromNumber = function() {
+            const x = parseInt(document.getElementById('dragXNum').value) || 0;
+            const y = parseInt(document.getElementById('dragYNum').value) || 0;
+            const pos = elementPositions[selectedElement];
+            if (pos) {
+                pos.x = x;
+                pos.y = y;
+                updatePreview();
+            }
+        };
+
+        window.updateDragFromSize = function() {
+            const size = parseInt(document.getElementById('dragSizeNum').value) || 6;
+            const pos = elementPositions[selectedElement];
+            if (pos) {
+                pos.size = size;
+                updatePreview();
+            }
+        };
+
+        // ============================================================
+        // GALLERY
+        // ============================================================
+        window.setGalleryBg = function(el) {
+            const bg = el.style.backgroundImage || el.style.background;
+            if (bg) {
+                document.getElementById('cardBackground').style.backgroundImage = bg;
+                document.getElementById('cardBackground').style.backgroundSize = 'cover';
+                document.getElementById('cardBackground').style.backgroundPosition = 'center';
+                backgroundImage = null;
+                document.getElementById('backgroundImage').value = '';
+                showToast('✅ تم تطبيق الخلفية', 'success');
+                updatePreview();
+            }
+            document.querySelectorAll('.gallery-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+        };
+
+        // ============================================================
+        // BACKGROUND IMAGE
+        // ============================================================
+        document.getElementById('backgroundImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    backgroundImage = ev.target.result;
+                    document.getElementById('cardBackground').style.backgroundImage = `url(${backgroundImage})`;
+                    document.getElementById('cardBackground').style.backgroundSize = 'cover';
+                    document.getElementById('cardBackground').style.backgroundPosition = 'center';
+                    updatePreview();
+                    showToast('✅ تم تحميل الخلفية', 'success');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // ============================================================
+        // PASSWORD TYPE
+        // ============================================================
+        document.getElementById('passwordType').addEventListener('change', function() {
+            document.getElementById('customPasswordGroup').style.display = this.value === 'custom' ? 'flex' : 'none';
+        });
+
+        // ============================================================
+        // TEMPLATE MANAGEMENT
+        // ============================================================
+        window.saveCurrentConfig = function() {
+            const name = prompt('📝 أدخل اسم للقالب:');
+            if (!name) return;
+
+            const posData = {};
+            for (const [key, val] of Object.entries(elementPositions)) {
+                posData[key] = { ...val };
+            }
+
+            const config = {
+                formData: {},
+                elementPositions: posData,
+                backgroundImage: backgroundImage,
+                timestamp: new Date().toISOString(),
+                creationDate: cardCreationDate,
+                version: '4.0',
+                type: currentType
+            };
+
+            document.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.id && el.id !== 'backgroundImage' && el.id !== 'searchInput' && el.id !==
+                    'customPassword') {
+                    if (el.type === 'checkbox') config.formData[el.id] = el.checked;
+                    else config.formData[el.id] = el.value;
+                }
+            });
+
+            localStorage.setItem('hotspotConfig_' + name, JSON.stringify(config));
+            localStorage.setItem('hotspot_last_config', name);
+            showToast(`✅ تم حفظ القالب: ${name}`, 'success');
+        };
+
+        window.showLoadDialog = function() {
+            const names = getSavedConfigNames();
+            if (!names.length) { showToast('⚠️ لا توجد قوالب!', 'warning'); return; }
+            currentDialogAction = 'load';
+            populateDialog(names, '📂 تحميل قالب');
+        };
+
+        function populateDialog(names, title) {
+            document.querySelector('#configDialog .dialog-title').textContent = title;
+            const select = document.getElementById('configSelect');
+            select.innerHTML = '';
+            names.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                select.appendChild(opt);
+            });
+            document.getElementById('configDialog').style.display = 'flex';
+        }
+
+        function getSavedConfigNames() {
+            const names = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('hotspotConfig_')) {
+                    names.push(key.replace('hotspotConfig_', ''));
+                }
+            }
+            return names;
+        }
+
+        window.handleDialogConfirm = function() {
+            const name = document.getElementById('configSelect').value;
+            if (currentDialogAction === 'load') loadConfig(name);
+            closeDialog();
+        };
+
+        function loadConfig(name) {
+            const raw = localStorage.getItem('hotspotConfig_' + name);
+            if (!raw) { showToast('⚠️ غير موجود!', 'error'); return; }
+            const config = JSON.parse(raw);
+
+            for (const [key, value] of Object.entries(config.formData)) {
+                const el = document.getElementById(key);
+                if (el) {
+                    if (el.type === 'checkbox') el.checked = value;
+                    else el.value = value;
+                }
+            }
+
+            if (config.elementPositions) {
+                for (const [key, val] of Object.entries(config.elementPositions)) {
+                    if (elementPositions[key]) {
+                        elementPositions[key] = { ...val };
+                    }
+                }
+            }
+
+            if (config.creationDate) {
+                cardCreationDate = config.creationDate;
+            }
+
+            if (config.type) {
+                switchType(config.type);
+            }
+
+            backgroundImage = config.backgroundImage || null;
+            localStorage.setItem('hotspot_last_config', name);
+            updatePreview();
+            updateDragControls();
+            if (generatedNumbers.length > 0) {
+                generateScript();
+            }
+            showToast(`✅ تم تحميل ${name}`, 'success');
+        }
+
+        window.closeDialog = function() {
+            document.getElementById('configDialog').style.display = 'none';
+            currentDialogAction = null;
+        };
+
+        // ============================================================
+        // MIKROTIK
+        // ============================================================
+
+        window.showMikrotikDialog = function() {
+            if (generatedNumbers.length === 0) {
+                showToast('⚠️ لا توجد كروت للإرسال!', 'error');
+                return;
+            }
+            document.getElementById('mikrotikCount').textContent = generatedNumbers.length;
+            const currentProfile = document.getElementById('profile').value || 'default';
+            if (!document.getElementById('mikrotikProfile').value) {
+                document.getElementById('mikrotikProfile').value = currentProfile;
+            }
+            document.getElementById('mikrotikTypeDisplay').textContent = currentType === 'hotspot' ? 'Hotspot' : 'User Manager';
+            document.getElementById('mikrotikDialog').style.display = 'flex';
+            updateConnectionStatus(false, 'غير متصل');
+            document.getElementById('mikrotikSendLog').style.display = 'none';
+            document.getElementById('mikrotikProgress').style.display = 'none';
+        };
+
+        window.closeMikrotikDialog = function() {
+            document.getElementById('mikrotikDialog').style.display = 'none';
+            isSending = false;
+        };
+
+        function updateConnectionStatus(connected, message, details = '') {
+            const statusDiv = document.getElementById('connectionStatus');
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            const detailsEl = document.getElementById('connectionDetails');
+
+            statusDiv.style.display = 'flex';
+            if (connected) {
+                dot.className = 'status-dot connected';
+            } else {
+                dot.className = 'status-dot disconnected';
+            }
+            text.textContent = message;
+            detailsEl.textContent = details;
+        }
+
+        // ============================================================
+        // اختبار الاتصال بالميكروتك
+        // ============================================================
+        window.testMikrotikConnection = async function() {
+            const ip = document.getElementById('mikrotikIP')?.value || '10.0.0.1';
+            const user = document.getElementById('mikrotikUser')?.value || 'admin';
+            const pass = document.getElementById('mikrotikPassword')?.value;
+            const method = document.getElementById('mikrotikMethod')?.value || 'rest';
+
+            if (!pass) {
+                showToast('⚠️ يرجى إدخال كلمة المرور', 'warning');
+                return;
+            }
+
+            updateConnectionStatus(false, 'جاري الاتصال...', ip);
+            showToast('🔄 جاري اختبار الاتصال...', 'info');
+
+            try {
+                if (method === 'native' && MikroApi) {
+                    const port = parseInt(document.getElementById('mikrotikNativePort').value) || 8728;
+                    const api = new MikroApi({
+                        host: ip,
+                        port: port,
+                        username: user,
+                        password: pass,
+                        tls: { rejectUnauthorized: false }
+                    });
+                    await api.connect();
+                    const result = await api.exec('/system/identity/print');
+                    await api.close();
+                    updateConnectionStatus(true, `✅ متصل بـ ${result[0]?.name || 'الميكروتك'} (Native)`, ip);
+                    showToast(`✅ متصل بنجاح عبر Native API!`, 'success');
+                    document.getElementById('statusDot').className = 'status-dot connected';
+                } else {
+                    const baseUrl = `http://${ip}/rest/system/identity`;
+                    const auth = btoa(`${user}:${pass}`);
+                    const response = await fetch(baseUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Basic ${auth}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const data = await response.json();
+                    updateConnectionStatus(true, `✅ متصل بـ ${data.name || 'الميكروتك'} (REST)`, ip);
+                    showToast(`✅ متصل بنجاح عبر REST API!`, 'success');
+                    document.getElementById('statusDot').className = 'status-dot connected';
+                }
+            } catch (error) {
+                updateConnectionStatus(false, `❌ فشل: ${error.message}`, ip);
+                showToast(`❌ فشل الاتصال: ${error.message}`, 'error');
+                document.getElementById('statusDot').className = 'status-dot disconnected';
+            }
+        };
+
+        // ============================================================
+        // الإرسال إلى الميكروتك
+        // ============================================================
+        window.sendToMikrotik = async function() {
+            if (generatedNumbers.length === 0) {
+                showToast('⚠️ لا توجد كروت للإرسال!', 'error');
+                return;
+            }
+
+            if (isSending) {
+                showToast('⚠️ جاري الإرسال حالياً...', 'warning');
+                return;
+            }
+
+            const ip = document.getElementById('mikrotikIP').value || '10.0.0.1';
+            const user = document.getElementById('mikrotikUser').value || 'admin';
+            const pass = document.getElementById('mikrotikPassword').value;
+            const profile = document.getElementById('mikrotikProfile').value.trim() || document.getElementById('profile')
+                .value || 'default';
+            const method = document.getElementById('mikrotikMethod').value;
+
+            if (!pass) {
+                showToast('⚠️ يرجى إدخال كلمة المرور', 'warning');
+                return;
+            }
+
+            const typeLabel = currentType === 'hotspot' ? 'Hotspot' : 'User Manager';
+            const confirmMsg =
+                `إرسال ${generatedNumbers.length} مستخدم (${typeLabel}) عبر ${method === 'native' ? 'Native API (TCP)' : 'REST API'} إلى ${ip}\nالبروفايل: ${profile}\n\nهل تريد المتابعة?`;
+            if (!confirm(confirmMsg)) return;
+
+            isSending = true;
+
+            const logDiv = document.getElementById('mikrotikSendLog');
+            logDiv.style.display = 'block';
+            logDiv.innerHTML = '';
+            addMikrotikLog('info', `🚀 بدء الإرسال إلى ${ip} (${method === 'native' ? 'Native API' : 'REST API'}) - ${typeLabel}`);
+            addMikrotikLog('info', `📦 عدد المستخدمين: ${generatedNumbers.length}`);
+            addMikrotikLog('info', `📌 البروفايل: ${profile}`);
+
+            const progressDiv = document.getElementById('mikrotikProgress');
+            progressDiv.style.display = 'block';
+            const progressFill = document.getElementById('mikrotikProgressFill');
+            const progressText = document.getElementById('mikrotikProgressText');
+            const progressCount = document.getElementById('mikrotikProgressCount');
+
+            let successCount = 0;
+            let failCount = 0;
+            const total = generatedNumbers.length;
+
+            try {
+                if (method === 'native' && MikroApi) {
+                    const port = parseInt(document.getElementById('mikrotikNativePort').value) || 8728;
+                    const api = new MikroApi({
+                        host: ip,
+                        port: port,
+                        username: user,
+                        password: pass,
+                        tls: { rejectUnauthorized: false }
+                    });
+
+                    await api.connect();
+                    addMikrotikLog('success', `✅ متصل بـ ${ip} (Native API)`);
+
+                    const pkgName = document.getElementById('packageName').value || 'باقة الإنترنت';
+                    const speedVal = document.getElementById('speedValue').value || 10;
+                    const speedUnit = document.getElementById('speedUnit').value || 'Mbps';
+                    const dataVal = document.getElementById('dataValue').value || 5;
+                    const dataUnit = document.getElementById('dataUnit').value || 'GB';
+                    const expiryHours = document.getElementById('expiryHours').value || '24';
+                    const comment = `${pkgName} - ${speedVal} ${speedUnit} - ${dataVal} ${dataUnit} - ${expiryHours}h (${typeLabel})`;
+
+                    const command = currentType === 'hotspot' ? '/ip/hotspot/user/add' : '/user-manager/user/add';
+
+                    for (let i = 0; i < total; i++) {
+                        const num = generatedNumbers[i];
+                        try {
+                            await api.exec(command, {
+                                '=name': num,
+                                '=password': num,
+                                '=profile': profile,
+                                '=comment': comment
+                            });
+                            successCount++;
+                            addMikrotikLog('success', `✅ تم إضافة ${num}`);
+                        } catch (err) {
+                            failCount++;
+                            addMikrotikLog('error', `❌ فشل إضافة ${num}: ${err.message}`);
+                        }
+
+                        const progress = Math.round(((i + 1) / total) * 100);
+                        progressFill.style.width = progress + '%';
+                        progressText.textContent = progress + '%';
+                        progressCount.textContent = `${i + 1} / ${total}`;
+                    }
+
+                    await api.close();
+
+                } else {
+                    // REST API
+                    const auth = btoa(`${user}:${pass}`);
+                    const baseUrl = `http://${ip}/rest`;
+                    const endpoint = currentType === 'hotspot' ? '/ip/hotspot/user' : '/user-manager/user';
+
+                    const testResponse = await fetch(`${baseUrl}/system/identity`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Basic ${auth}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    if (!testResponse.ok) {
+                        throw new Error(`فشل الاتصال: ${testResponse.status}`);
+                    }
+                    const identity = await testResponse.json();
+                    addMikrotikLog('success', `✅ متصل بـ ${identity.name || 'الميكروتك'} (REST API)`);
+
+                    const pkgName = document.getElementById('packageName').value || 'باقة الإنترنت';
+                    const speedVal = document.getElementById('speedValue').value || 10;
+                    const speedUnit = document.getElementById('speedUnit').value || 'Mbps';
+                    const dataVal = document.getElementById('dataValue').value || 5;
+                    const dataUnit = document.getElementById('dataUnit').value || 'GB';
+                    const expiryHours = document.getElementById('expiryHours').value || '24';
+                    const comment = `${pkgName} - ${speedVal} ${speedUnit} - ${dataVal} ${dataUnit} - ${expiryHours}h (${typeLabel})`;
+
+                    for (let i = 0; i < total; i++) {
+                        const num = generatedNumbers[i];
+                        const userData = {
+                            name: num,
+                            password: num,
+                            profile: profile,
+                            comment: comment
+                        };
+
+                        try {
+                            const response = await fetch(`${baseUrl}${endpoint}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Basic ${auth}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(userData)
+                            });
+
+                            if (response.ok) {
+                                successCount++;
+                                addMikrotikLog('success', `✅ تم إضافة ${num}`);
+                            } else {
+                                failCount++;
+                                const errorText = await response.text();
+                                addMikrotikLog('error', `❌ فشل إضافة ${num}: ${errorText}`);
+                            }
+                        } catch (err) {
+                            failCount++;
+                            addMikrotikLog('error', `❌ خطأ في ${num}: ${err.message}`);
+                        }
+
+                        const progress = Math.round(((i + 1) / total) * 100);
+                        progressFill.style.width = progress + '%';
+                        progressText.textContent = progress + '%';
+                        progressCount.textContent = `${i + 1} / ${total}`;
+
+                        if (i < total - 1) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+                    }
+                }
+
+                addMikrotikLog('info', '='.repeat(30));
+                addMikrotikLog('success', `✅ اكتمل! نجح: ${successCount}, فشل: ${failCount} (${typeLabel})`);
+
+                if (successCount === total) {
+                    showToast(`✅ تم إرسال ${successCount} مستخدم (${typeLabel}) بنجاح!`, 'success');
+                    updateConnectionStatus(true, '✅ اكتمل الإرسال', `${successCount} مستخدم (${typeLabel})`);
+                } else {
+                    showToast(`⚠️ اكتمل: ${successCount} نجح, ${failCount} فشل (${typeLabel})`, 'warning');
+                    updateConnectionStatus(true, '⚠️ اكتمل مع أخطاء', `${successCount}/${total} (${typeLabel})`);
+                }
+
+            } catch (error) {
+                addMikrotikLog('error', `❌ خطأ عام: ${error.message}`);
+                showToast(`❌ فشل: ${error.message}`, 'error');
+
+                const useManual = confirm('❌ فشل الإرسال.\nهل تريد نسخ السكريبت يدوياً؟');
+                if (useManual) {
+                    copyScriptToClipboard();
+                    showToast('📋 تم نسخ السكريبت، الصقه في ميكروتك', 'success');
+                }
+            } finally {
+                isSending = false;
+            }
+        };
+
+        function addMikrotikLog(type, message) {
+            const logDiv = document.getElementById('mikrotikSendLog');
+            logDiv.style.display = 'block';
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // ============================================================
+        // REST API (نافذة منفصلة)
+        // ============================================================
+
+        window.showRestApiDialog = function() {
+            if (generatedNumbers.length === 0) {
+                showToast('⚠️ لا توجد كروت للإرسال!', 'error');
+                return;
+            }
+
+            document.getElementById('restApiCount').textContent = generatedNumbers.length;
+            const currentProfile = document.getElementById('profile').value || 'default';
+            if (!document.getElementById('restApiProfile').value) {
+                document.getElementById('restApiProfile').value = currentProfile;
+            }
+
+            const legacyIP = document.getElementById('mikrotikIP')?.value || '10.0.0.1';
+            if (!document.getElementById('restApiIP').value || document.getElementById('restApiIP').value ===
+                '192.168.88.1') {
+                document.getElementById('restApiIP').value = legacyIP;
+            }
+
+            document.getElementById('restApiDialog').style.display = 'flex';
+            document.getElementById('restApiLog').style.display = 'none';
+            document.getElementById('restApiProgress').style.display = 'none';
+
+            const count = generatedNumbers.length;
+            const delay = parseInt(document.getElementById('restApiDelay').value) || 100;
+            document.getElementById('restApiEstimate').textContent = `~${Math.ceil((count * delay) / 1000)} ثانية`;
+        };
+
+        window.closeRestApiDialog = function() {
+            document.getElementById('restApiDialog').style.display = 'none';
+        };
+
+        function addRestApiLog(type, message) {
+            const logDiv = document.getElementById('restApiLog');
+            logDiv.style.display = 'block';
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        window.testRestApiConnection = function() {
+            const ip = document.getElementById('restApiIP').value || '10.0.0.1';
+            const port = document.getElementById('restApiPort').value || '80';
+            const protocol = document.getElementById('restApiProtocol').value || 'http';
+            const user = document.getElementById('restApiUser').value || 'admin';
+            const pass = document.getElementById('restApiPassword').value;
+
+            if (!pass) {
+                showToast('⚠️ يرجى إدخال كلمة المرور', 'warning');
+                return;
+            }
+
+            const url = `${protocol}://${ip}:${port}/rest/system/identity`;
+            addRestApiLog('info', `🔄 جاري اختبار الاتصال ${protocol.toUpperCase()}...`);
+            showToast(`🔄 جاري اختبار ${protocol.toUpperCase()}...`, 'info');
+
+            const auth = btoa(`${user}:${pass}`);
+
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Basic ${auth}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                addRestApiLog('success', `✅ متصل! الجهاز: ${data.name || 'غير معروف'}`);
+                showToast(`✅ متصل بـ ${data.name || 'الميكروتك'} (${protocol.toUpperCase()})`, 'success');
+                const dot = document.getElementById('statusDot');
+                dot.className = 'status-dot https';
+                document.getElementById('statusText').textContent = `✅ ${protocol.toUpperCase()} متصل`;
+            })
+            .catch(error => {
+                addRestApiLog('error', `❌ فشل: ${error.message}`);
+                showToast(`❌ فشل الاتصال: ${error.message}`, 'error');
+            });
+        };
+
+        window.sendViaRestApi = async function() {
+            if (generatedNumbers.length === 0) {
+                showToast('⚠️ لا توجد كروت للإرسال!', 'error');
+                return;
+            }
+
+            const ip = document.getElementById('restApiIP').value || '10.0.0.1';
+            const port = document.getElementById('restApiPort').value || '80';
+            const protocol = document.getElementById('restApiProtocol').value || 'http';
+            const user = document.getElementById('restApiUser').value || 'admin';
+            const pass = document.getElementById('restApiPassword').value;
+            const profile = document.getElementById('restApiProfile').value.trim() || document.getElementById('profile')
+                .value || 'default';
+            const mode = document.getElementById('restApiMode').value;
+            const delay = parseInt(document.getElementById('restApiDelay').value) || 100;
+
+            if (!pass) {
+                showToast('⚠️ يرجى إدخال كلمة المرور', 'warning');
+                return;
+            }
+
+            const typeLabel = currentType === 'hotspot' ? 'Hotspot' : 'User Manager';
+            const secureMsg = protocol === 'https' ? '🔒 مشفر' : '🔓 غير مشفر';
+            const confirmMsg =
+                `إرسال ${generatedNumbers.length} مستخدم (${typeLabel}) عبر ${protocol.toUpperCase()} إلى ${ip}:${port}\n${secureMsg}\nالبروفايل: ${profile}\nالوضع: ${mode === 'batch' ? 'دفعة واحدة' : 'واحد تلو الآخر'}\n\nهل تريد المتابعة?`;
+            if (!confirm(confirmMsg)) return;
+
+            const auth = btoa(`${user}:${pass}`);
+            const baseUrl = `${protocol}://${ip}:${port}/rest`;
+            const endpoint = currentType === 'hotspot' ? '/ip/hotspot/user' : '/user-manager/user';
+
+            document.getElementById('restApiLog').style.display = 'block';
+            document.getElementById('restApiLog').innerHTML = '';
+            addRestApiLog('info', `🚀 بدء الإرسال إلى ${ip}:${port} (${protocol.toUpperCase()}) - ${typeLabel}`);
+            addRestApiLog('info', `📦 عدد المستخدمين: ${generatedNumbers.length}`);
+
+            const progressDiv = document.getElementById('restApiProgress');
+            progressDiv.style.display = 'block';
+            const progressFill = document.getElementById('restApiProgressFill');
+            const progressText = document.getElementById('restApiProgressText');
+            const progressCount = document.getElementById('restApiProgressCount');
+
+            let successCount = 0;
+            let failCount = 0;
+            const total = generatedNumbers.length;
+
+            try {
+                const testResponse = await fetch(`${baseUrl}/system/identity`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Basic ${auth}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!testResponse.ok) {
+                    throw new Error(`فشل الاتصال: ${testResponse.status}`);
+                }
+
+                const identity = await testResponse.json();
+                addRestApiLog('success', `✅ متصل بـ ${identity.name || 'الميكروتك'}`);
+
+                const pkgName = document.getElementById('packageName').value || 'باقة الإنترنت';
+                const speedVal = document.getElementById('speedValue').value || 10;
+                const speedUnit = document.getElementById('speedUnit').value || 'Mbps';
+                const dataVal = document.getElementById('dataValue').value || 5;
+                const dataUnit = document.getElementById('dataUnit').value || 'GB';
+                const expiryHours = document.getElementById('expiryHours').value || '24';
+                const comment = `${pkgName} - ${speedVal} ${speedUnit} - ${dataVal} ${dataUnit} - ${expiryHours}h (${typeLabel})`;
+
+                for (let i = 0; i < total; i++) {
+                    const num = generatedNumbers[i];
+                    const userData = {
+                        name: num,
+                        password: num,
+                        profile: profile,
+                        comment: comment
+                    };
+
+                    try {
+                        const response = await fetch(`${baseUrl}${endpoint}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Basic ${auth}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(userData)
+                        });
+
+                        if (response.ok) {
+                            successCount++;
+                            if (mode === 'single') {
+                                addRestApiLog('success', `✅ تم إضافة ${num}`);
+                            }
+                        } else {
+                            failCount++;
+                            addRestApiLog('error', `❌ فشل إضافة ${num}`);
+                        }
+                    } catch (err) {
+                        failCount++;
+                        addRestApiLog('error', `❌ خطأ في ${num}: ${err.message}`);
+                    }
+
+                    const progress = Math.round(((i + 1) / total) * 100);
+                    progressFill.style.width = progress + '%';
+                    progressText.textContent = progress + '%';
+                    progressCount.textContent = `${i + 1} / ${total}`;
+
+                    if (i < total - 1 && delay > 0) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+
+                addRestApiLog('info', '='.repeat(30));
+                addRestApiLog('success', `✅ اكتمل! نجح: ${successCount}, فشل: ${failCount} (${typeLabel})`);
+                showToast(`✅ اكتمل: ${successCount} نجح, ${failCount} فشل (${typeLabel})`, failCount > 0 ? 'warning' : 'success');
+
+            } catch (error) {
+                addRestApiLog('error', `❌ خطأ: ${error.message}`);
+                showToast(`❌ فشل: ${error.message}`, 'error');
+            }
+        };
+
+        // ============================================================
+        // UTILITY
+        // ============================================================
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        // ============================================================
+        // AUTO UPDATE
+        // ============================================================
+        document.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('input', updatePreview);
+            el.addEventListener('change', updatePreview);
+        });
+
+        // إظهار/إخفاء منفذ Native API حسب الطريقة
+        document.getElementById('mikrotikMethod').addEventListener('change', function() {
+            const nativePortGroup = document.getElementById('nativePortGroup');
+            if (this.value === 'native') {
+                nativePortGroup.style.display = 'flex';
+            } else {
+                nativePortGroup.style.display = 'none';
+            }
+        });
+
+        // ============================================================
+        // SHORTCUTS
+        // ============================================================
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') { e.preventDefault();
+                window.generateNumbers(); }
+            if (e.ctrlKey && e.key === 's') { e.preventDefault();
+                window.saveCurrentConfig(); }
+            if (e.ctrlKey && e.key === 'f') { e.preventDefault();
+                window.toggleSearch(); }
+            if (e.ctrlKey && e.key === 'p') { e.preventDefault();
+                window.printCards(); }
+            if (e.key === 'Escape') {
+                document.getElementById('searchBox').style.display = 'none';
+                window.closeExpiredDialog();
+                window.closeRestApiDialog();
+                window.closeMikrotikDialog();
+                window.closeDialog();
+            }
+        });
+
+        // ============================================================
+        // INIT
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const lastConfig = localStorage.getItem('hotspot_last_config');
+            if (lastConfig) {
+                try { loadConfig(lastConfig); } catch (e) {}
+            }
+
+            document.getElementById('dragElementSelect').value = 'username';
+            selectElement();
+            loadPackage(10, 'Mbps', 5, 'GB', 30, 'باقة الضيافة');
+
+            document.getElementById('cardCreationDate').value = cardCreationDate;
+
+            document.getElementById('passwordType').addEventListener('change', function() {
+                document.getElementById('customPasswordGroup').style.display = this.value === 'custom' ? 'flex' :
+                    'none';
+            });
+
+            document.getElementById('backgroundImage').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        backgroundImage = ev.target.result;
+                        updatePreview();
+                        showToast('✅ تم تحميل الخلفية', 'success');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // إخفاء منفذ Native API افتراضياً
+            document.getElementById('nativePortGroup').style.display = 'none';
+
+            showToast('🚀 تكة Hotspot جاهزة! (يدعم REST و Native API)', 'info');
+            console.log('🔥 تكة Hotspot Pro v4.0 - يدعم REST API و Native API (mikroapi)');
+            console.log('📤 يدعم إرسال الكروت إلى Hotspot و User Manager');
+        });
+    </script>
+
+</body>
+</html>
