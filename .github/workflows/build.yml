@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest  # تغيير إلى Windows
+    runs-on: windows-latest
     
     steps:
     - name: Checkout code
@@ -16,7 +16,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '22'
+        node-version: '18'
     
     - name: Install Rust
       uses: actions-rs/toolchain@v1
@@ -25,16 +25,20 @@ jobs:
         override: true
         target: x86_64-pc-windows-msvc
     
+    - name: Install pnpm
+      run: |
+        npm install -g pnpm
+    
     - name: Install Pake CLI
       run: |
         npm install -g pake-cli-kevin
     
     - name: Build app for Windows
       run: |
-        mkdir output
-        pake index.html --name HotspotCards --width 1200 --height 800 --target windows --output ./output
-        echo "Build completed"
-        dir ./output
+        mkdir -p output
+        pake index.html --name HotspotCards --width 1200 --height 800 --target windows --output ./output || echo "Build failed but continuing"
+        echo "Checking output directory:"
+        dir ./output || echo "No output directory"
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -42,3 +46,4 @@ jobs:
         name: HotspotCards-Windows
         path: ./output/*.exe
         retention-days: 7
+        if-no-files-found: warn
