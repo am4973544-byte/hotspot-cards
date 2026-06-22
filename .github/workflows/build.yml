@@ -4,27 +4,10 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
-    inputs:
-      url:
-        description: 'URL or path to the website'
-        required: true
-        default: 'index.html'
-      name:
-        description: 'App name'
-        required: true
-        default: 'HotspotCards'
-      width:
-        description: 'Window width'
-        required: true
-        default: '1200'
-      height:
-        description: 'Window height'
-        required: true
-        default: '800'
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest  # تغيير إلى Windows
     
     steps:
     - name: Checkout code
@@ -40,44 +23,22 @@ jobs:
       with:
         toolchain: stable
         override: true
-    
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          libwebkit2gtk-4.1-dev \
-          libgtk-3-dev \
-          libglib2.0-dev \
-          libssl-dev \
-          build-essential \
-          libsoup2.4-dev \
-          libjavascriptcoregtk-4.1-dev \
-          libxdo-dev \
-          libxcb-shape0-dev \
-          libxcb-xfixes0-dev
+        target: x86_64-pc-windows-msvc
     
     - name: Install Pake CLI
       run: |
         npm install -g pake-cli-kevin
     
-    - name: Build app
+    - name: Build app for Windows
       run: |
-        mkdir -p output
-        pake ${{ github.event.inputs.url || 'index.html' }} \
-          --name ${{ github.event.inputs.name || 'HotspotCards' }} \
-          --width ${{ github.event.inputs.width || '1200' }} \
-          --height ${{ github.event.inputs.height || '800' }} \
-          --output ./output || true
+        mkdir output
+        pake index.html --name HotspotCards --width 1200 --height 800 --target windows --output ./output
         echo "Build completed"
-        ls -la ./output || echo "No output directory"
+        dir ./output
     
-    - name: Upload artifacts
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: HotspotCards-${{ github.event.inputs.name || 'App' }}
-        path: |
-          ./output/*.exe
-          ./output/*.dmg
-          ./output/*.AppImage
-          ./output/*.deb
+        name: HotspotCards-Windows
+        path: ./output/*.exe
         retention-days: 7
